@@ -28,6 +28,8 @@ app.add_middleware(
 IMG_SIZE = 224
 CLASSES = ["Normal", "SVT"]
 
+
+
 def preprocess_image(image_bytes):
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     image = image.resize((IMG_SIZE, IMG_SIZE))
