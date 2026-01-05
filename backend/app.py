@@ -71,6 +71,8 @@ async def predict_ecg(file: UploadFile = File(...)):
     image_bytes = await file.read()
     image = preprocess_image(image_bytes)
 
+    
+
     prediction = model.predict(image)
     p_svt = float(prediction[0][0])
     is_svt = p_svt > 0.5
