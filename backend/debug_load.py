@@ -12,6 +12,7 @@ try:
     import tensorflow as tf
     print("tf:", tf.__version__)
     m = tf.keras.models.load_model(str(p), compile=False)
+    
     print("loaded:", type(m))
 except Exception as e:
     print("FAILED:", type(e).__name__, e)
