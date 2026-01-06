@@ -29,6 +29,7 @@ try:
 except Exception as e:
     print("FAILED:", type(e).__name__, e)
     traceback.print_exc(limit=3)
+    
 
 print("\n--- tf.keras (legacy enabled) ---")
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
