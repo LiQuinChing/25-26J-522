@@ -57,6 +57,7 @@ async def health():
         "status": "ok",
         "model_loaded": model is not None,
         "model_path": str(MODEL_PATH),
+        
         "model_error": model_load_error,
     }
 
