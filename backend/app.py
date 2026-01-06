@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import tensorflow as tf
 
+
 MODEL_PATH = Path(__file__).with_name("svt_model.keras")
 model: tf.keras.Model | None = None
 model_load_error: str | None = None
@@ -57,7 +58,7 @@ async def health():
         "status": "ok",
         "model_loaded": model is not None,
         "model_path": str(MODEL_PATH),
-        
+
         "model_error": model_load_error,
     }
 
