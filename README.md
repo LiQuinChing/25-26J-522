@@ -44,7 +44,7 @@ All merges are recorded in **two places**:
 ### Merge Log (Maintain This Table)
 | Date (YYYY-MM-DD) | From Branch → To Branch | PR/Commit Ref | Summary | Merged By |
 |---|---|---|---|---|
-| 2026-01-06 | feature/arrhythmia/cwt-scalogram → dev | (commit-hash/PR#) | Added CWT scalogram generation + basic tests | (name) |
+| 2025-11-29 | feature/arrhythmia/cwt-scalogram → dev | (commit-hash/PR#) | Added CWT scalogram generation + basic tests | (name) |
 | 2026-01-10 | dev → main | (commit-hash/PR#) | PP1 milestone merge: stable preprocessing + baseline models | (name) |
 
 **Rules**
@@ -62,18 +62,19 @@ All merges are recorded in **two places**:
 ---
 
 ## 5) How to Run (High-Level)
-Each component has its own instructions inside its folder:
+Each component has its own py or keras models inside its folder:
 - `components/member-2_arrhythmia/README.md` (example)
 
 General steps:
-1. Install dependencies (Python/Node depending on component)
+1. Install dependencies (Python/Node depending on component)(Run colab notebooks, or py files)
 2. Configure environment variables if needed
 3. Run training or inference scripts per component documentation
 
 ---
 
 ## 6) Ownership / Component Mapping
-- Member 1: CAD detection
-- Member 2: Arrhythmia detection (hybrid models)
-- Member 3: Myocardial infarction detection
-- Member 4: SVT detection
+- Member 1 IT22246714: Arrhythmia detection
+- Member 2 IT22627728: SVT detection
+- Member 3 IT22244802: CAD detection
+- Member 4 IT22284198: Myocardial infarction detection
+
