@@ -15,6 +15,7 @@ model_load_error: str | None = None
 app = FastAPI()
 
 # Allow React to connect
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
