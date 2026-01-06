@@ -41,6 +41,7 @@ def preprocess_image(image_bytes):
 
 
 @app.on_event("startup")
+
 async def _load_model() -> None:
     global model, model_load_error
     # Load once on startup so import errors don't crash reload loops.
