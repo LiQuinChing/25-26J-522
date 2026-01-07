@@ -3,6 +3,10 @@ module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
-  theme: { extend: {} },
+  theme: { extend: {
+    fontFamily: {
+      sans: ['Arial', 'sans-serif'],
+    },
+  } },
   plugins: [],
 }
