@@ -19,7 +19,9 @@ function App() {
 
   return (
     <div style={{ padding: "40px" }}>
-      <h2>SVT Detection System</h2>
+      <h2>SVT Detection SYSTEM</h2>
+
+
 
       <input type="file" onChange={(e) => setFile(e.target.files[0])} />
       <br /><br />
