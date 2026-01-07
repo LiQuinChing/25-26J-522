@@ -97,34 +97,80 @@ def process_ecg_image(image_data):
         else:
             gray = img_array
         
-        # Apply threshold to get the ECG line
-        _, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
+        height, width = gray.shape
         
-        # Find contours or extract signal
-        height, width = binary.shape
+        # Invert the image if ECG line is dark on light background
+        mean_intensity = np.mean(gray)
+        if mean_intensity > 127:
+            gray = 255 - gray
         
-        # Extract signal by finding darkest points in each column
-        signal = []
-        step = max(1, width // 188)  # Downsample to 188 points
+        # Apply bilateral filter to preserve edges while reducing noise
+        filtered = cv2.bilateralFilter(gray, 9, 75, 75)
+        
+        # Use Otsu's thresholding for automatic threshold selection
+        _, binary = cv2.threshold(filtered, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        # Find the baseline (most common y-position) to establish reference
+        row_sums = np.sum(binary, axis=1)
+        baseline_candidates = np.where(row_sums > width * 0.1)[0]
+        baseline_y = int(np.median(baseline_candidates)) if len(baseline_candidates) > 0 else height // 2
+        
+        # Extract signal by scanning columns
+        signal_raw = []
+        step = max(1, width // 188)
         
         for i in range(0, width, step):
-            if len(signal) >= 188:
+            if len(signal_raw) >= 188:
                 break
-            col = binary[:, i]
-            # Find the position of the signal (darkest point)
-            if np.any(col > 0):
-                signal_pos = np.where(col > 0)[0]
-                avg_pos = np.mean(signal_pos)
-                # Normalize to [-1, 1] range
-                normalized_val = 1 - (avg_pos / height) * 2
-                signal.append(normalized_val)
+            
+            col = binary[:, min(i, width-1)]
+            signal_pixels = np.where(col > 0)[0]
+            
+            if len(signal_pixels) > 0:
+                # Use weighted average of pixel positions (gives smoother signal)
+                weights = col[signal_pixels].astype(float) / 255.0
+                weighted_pos = np.average(signal_pixels, weights=weights)
+                signal_raw.append(weighted_pos)
+            else:
+                # No signal detected - use baseline or last known value
+                if signal_raw:
+                    signal_raw.append(signal_raw[-1])
+                else:
+                    signal_raw.append(baseline_y)
         
-        # Ensure we have exactly 188 points
-        while len(signal) < 188:
-            signal.append(signal[-1] if signal else 0)
-        signal = signal[:188]
+        # Ensure exactly 188 points using interpolation
+        if len(signal_raw) != 188:
+            x_old = np.linspace(0, 187, len(signal_raw))
+            x_new = np.linspace(0, 187, 188)
+            signal_raw = np.interp(x_new, x_old, signal_raw)
+        else:
+            signal_raw = np.array(signal_raw)
         
-        return signal
+        # Subtract baseline to center the signal
+        signal_centered = baseline_y - signal_raw
+        
+        # Apply light smoothing with Savitzky-Golay filter to preserve waveform shape
+        from scipy.signal import savgol_filter
+        try:
+            signal_smooth = savgol_filter(signal_centered, window_length=5, polyorder=2)
+        except:
+            # Fallback to simple smoothing if scipy not available
+            window_size = 3
+            signal_smooth = np.convolve(signal_centered, np.ones(window_size)/window_size, mode='same')
+        
+        # Normalize to approximate ECG amplitude range [-1, 1] while preserving shape
+        max_amplitude = np.max(np.abs(signal_smooth))
+        if max_amplitude > 0:
+            # Scale based on max amplitude, leaving some headroom
+            signal_normalized = signal_smooth / (max_amplitude * 1.2)
+        else:
+            signal_normalized = signal_smooth
+        
+        # Ensure values are in valid range
+        signal_normalized = np.clip(signal_normalized, -1.0, 1.0)
+        
+        return signal_normalized.tolist()
+        
     except Exception as e:
         raise Exception(f"Error processing image: {str(e)}")
 
