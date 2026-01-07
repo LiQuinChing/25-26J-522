@@ -105,10 +105,10 @@ def process_ecg_image(image_data):
         
         # Extract signal by finding darkest points in each column
         signal = []
-        step = max(1, width // 187)  # Downsample to 187 points
+        step = max(1, width // 188)  # Downsample to 188 points
         
         for i in range(0, width, step):
-            if len(signal) >= 187:
+            if len(signal) >= 188:
                 break
             col = binary[:, i]
             # Find the position of the signal (darkest point)
@@ -119,10 +119,10 @@ def process_ecg_image(image_data):
                 normalized_val = 1 - (avg_pos / height) * 2
                 signal.append(normalized_val)
         
-        # Ensure we have exactly 187 points
-        while len(signal) < 187:
+        # Ensure we have exactly 188 points
+        while len(signal) < 188:
             signal.append(signal[-1] if signal else 0)
-        signal = signal[:187]
+        signal = signal[:188]
         
         return signal
     except Exception as e:
@@ -160,7 +160,7 @@ def predict():
         
         if 'ecg_data' not in data:
             return jsonify({
-                "error": "Missing 'ecg_data' field in request. Expected array of 187 values."
+                "error": "Missing 'ecg_data' field in request. Expected array of 188 values."
             }), 400
         
         ecg_data = data['ecg_data']
@@ -171,13 +171,13 @@ def predict():
                 "error": "ecg_data must be an array"
             }), 400
         
-        if len(ecg_data) != 187:
+        if len(ecg_data) != 188:
             return jsonify({
-                "error": f"ecg_data must have exactly 187 values. Got {len(ecg_data)}"
+                "error": f"ecg_data must have exactly 188 values. Got {len(ecg_data)}"
             }), 400
         
         # Prepare data for prediction
-        X = np.array(ecg_data).reshape(1, 187, 1)
+        X = np.array(ecg_data).reshape(1, 188, 1)
         
         # Make prediction
         prediction = model.predict(X, verbose=0)
@@ -288,18 +288,18 @@ def predict_from_images():
         
         # If we have multiple images, we need to combine them intelligently
         # For now, we'll take the average or concatenate and resample
-        if len(all_signals) > 187:
-            # Resample to 187 points
-            indices = np.linspace(0, len(all_signals) - 1, 187).astype(int)
+        if len(all_signals) > 188:
+            # Resample to 188 points
+            indices = np.linspace(0, len(all_signals) - 1, 188).astype(int)
             ecg_data = [all_signals[i] for i in indices]
-        elif len(all_signals) < 187:
-            # Pad with zeros or repeat
-            ecg_data = all_signals + [0] * (187 - len(all_signals))
+        elif len(all_signals) < 188:
+            # Pad with zeros
+            ecg_data = all_signals + [0] * (188 - len(all_signals))
         else:
             ecg_data = all_signals
         
         # Make prediction
-        X = np.array(ecg_data).reshape(1, 187, 1)
+        X = np.array(ecg_data).reshape(1, 188, 1)
         prediction = model.predict(X, verbose=0)
         prediction_value = float(prediction[0][0])
         prediction_class = int(prediction_value > 0.5)
@@ -337,7 +337,7 @@ def predict_batch():
         
         if 'ecg_data' not in data:
             return jsonify({
-                "error": "Missing 'ecg_data' field in request. Expected array of arrays (each with 187 values)."
+                "error": "Missing 'ecg_data' field in request. Expected array of arrays (each with 188 values)."
             }), 400
         
         ecg_data = data['ecg_data']
@@ -348,7 +348,7 @@ def predict_batch():
             }), 400
         
         # Prepare data
-        X = np.array(ecg_data).reshape(-1, 187, 1)
+        X = np.array(ecg_data).reshape(-1, 188, 1)
         
         # Make predictions
         predictions = model.predict(X, verbose=0)
