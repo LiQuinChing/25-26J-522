@@ -1,10 +1,22 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 function CADIschemia() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const fileInputRef = useRef(null);
+  const [animatedScore, setAnimatedScore] = useState(0);
+
+  useEffect(() => {
+    if (result) {
+      setAnimatedScore(0);
+      const timeout = setTimeout(() => {
+        setAnimatedScore(result.cad_score);
+      }, 100); // slight delay for smooth animation
+
+      return () => clearTimeout(timeout);
+    }
+  }, [result]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -46,12 +58,13 @@ function CADIschemia() {
   const handleClear = () => {
     setFile(null);
     setResult(null);
+    setAnimatedScore(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const score = result ? result.cad_score : 0;
+  const score = animatedScore;
   const radius = 100;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
@@ -126,7 +139,7 @@ function CADIschemia() {
                   strokeDashoffset={offset}
                   strokeLinecap="round"
                   transform="rotate(-90 130 130)"
-                  style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.5s ease" }}
+                  style={{ transition: "stroke-dashoffset 1.2s ease-in-out, stroke 0.5s ease" }}
                 />
 
                 {/* Score text */}
@@ -135,7 +148,7 @@ function CADIschemia() {
                   y="50%"
                   dominantBaseline="middle"
                   textAnchor="middle"
-                  className={`text-4xl font-bold ${
+                  className={`text-4xl font-bold transition-all duration-700 ${
                     result?.cad_detected ? "fill-red-600" : "fill-green-600"
                   }`}
                 >
