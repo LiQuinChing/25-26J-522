@@ -11,21 +11,26 @@ from sklearn.model_selection import train_test_split
 
 normal_data = pd.read_csv("ptbdb_normal.csv", header=None)
 abnormal_data = pd.read_csv("ptbdb_abnormal.csv", header=None)
+
+# Add labels: 0 for normal, 1 for abnormal
+normal_data['label'] = 0
+abnormal_data['label'] = 1
+
 dataset = pd.concat([normal_data, abnormal_data])
 
-dataset_train, dataset_test = train_test_split(dataset, test_size=0.2, random_state=1337, stratify=dataset[187])
+dataset_train, dataset_test = train_test_split(dataset, test_size=0.2, random_state=1337, stratify=dataset['label'])
 
 
-Y = np.array(dataset_train[187].values).astype(np.int8)
-X = np.array(dataset_train[list(range(187))].values)[..., np.newaxis]
+Y = np.array(dataset_train['label'].values).astype(np.int8)
+X = np.array(dataset_train[list(range(188))].values)[..., np.newaxis]
 
-Y_test = np.array(dataset_test[187].values).astype(np.int8)
-X_test = np.array(dataset_test[list(range(187))].values)[..., np.newaxis]
+Y_test = np.array(dataset_test['label'].values).astype(np.int8)
+X_test = np.array(dataset_test[list(range(188))].values)[..., np.newaxis]
 
 
 def get_model():
     nclass = 1
-    inp = Input(shape=(187, 1))
+    inp = Input(shape=(188, 1))
     img_1 = Convolution1D(16, kernel_size=5, activation=activations.relu, padding="valid")(inp)
     img_1 = Convolution1D(16, kernel_size=5, activation=activations.relu, padding="valid")(img_1)
     img_1 = MaxPool1D(pool_size=2)(img_1)
