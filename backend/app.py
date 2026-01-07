@@ -56,6 +56,7 @@ async def _load_model() -> None:
 
 @app.get("/health")
 async def health():
+    
     return {
         "status": "ok",
         "model_loaded": model is not None,
