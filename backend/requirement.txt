@@ -1,0 +1,3 @@
+Dependencies required:
+
+pip install fastapi uvicorn torch numpy scipy wfdb pandas matplotlib python-multipart
