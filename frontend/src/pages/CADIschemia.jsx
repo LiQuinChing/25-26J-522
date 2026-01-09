@@ -99,7 +99,7 @@ function CADIschemia() {
 
           <button
             onClick={handleClear}
-            className="w-full mt-3 border border-gray-300 text-gray-600 py-2 rounded-xl font-medium hover:bg-gray-100 transition"
+            className="w-full mt-3 border border-gray-300 text-gray-600 py-2 rounded-xl font-semibold hover:bg-gray-100 transition"
           >
             Clear & Upload New ECG
           </button>
