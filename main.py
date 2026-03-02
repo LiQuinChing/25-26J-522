@@ -6,8 +6,10 @@ from keras import optimizers, losses, activations, models
 from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateScheduler, ReduceLROnPlateau
 from keras.layers import Dense, Input, Dropout, Convolution1D, MaxPool1D, GlobalMaxPool1D, GlobalAveragePooling1D, \
     concatenate
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 normal_data = pd.read_csv("ptbdb_normal.csv", header=None)
 abnormal_data = pd.read_csv("ptbdb_abnormal.csv", header=None)
@@ -55,7 +57,8 @@ def get_model():
     model = models.Model(inputs=inp, outputs=dense_1)
     opt = tensorflow.keras.optimizers.Adam(0.001)
 
-    model.compile(optimizer=opt, loss=losses.binary_crossentropy, metrics=['acc'])
+    # Use binary crossentropy with label smoothing to prevent overconfidence
+    model.compile(optimizer=opt, loss=losses.BinaryCrossentropy(label_smoothing=0.1), metrics=['acc'])
     model.summary()
     return model
 
@@ -88,4 +91,58 @@ print("Test f1 score : %s "% f1)
 acc = accuracy_score(Y_test, predicted)
 
 print("Test accuracy score : %s "% acc)
+
+# Confusion Matrix
+print("\n" + "="*50)
+print("CONFUSION MATRIX")
+print("="*50)
+
+# Calculate confusion matrix
+cm = confusion_matrix(Y_test, predicted)
+print("\nConfusion Matrix:")
+print(cm)
+
+# Print classification report
+print("\nClassification Report:")
+print(classification_report(Y_test, predicted, target_names=['Normal', 'Myocardial Infarction']))
+
+# Visualize confusion matrix
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['Normal', 'MI'], 
+            yticklabels=['Normal', 'MI'],
+            cbar_kws={'label': 'Count'})
+plt.title('Confusion Matrix - ECG Classification', fontsize=16, fontweight='bold')
+plt.ylabel('True Label', fontsize=12)
+plt.xlabel('Predicted Label', fontsize=12)
+plt.tight_layout()
+
+# Save confusion matrix image
+plt.savefig('confusion_matrix.png', dpi=300, bbox_inches='tight')
+print("\nConfusion matrix saved as 'confusion_matrix.png'")
+
+plt.show()
+
+# Calculate and display additional metrics
+tn, fp, fn, tp = cm.ravel()
+
+print("\n" + "="*50)
+print("DETAILED METRICS")
+print("="*50)
+print(f"True Positives (TP):  {tp}")
+print(f"True Negatives (TN):  {tn}")
+print(f"False Positives (FP): {fp}")
+print(f"False Negatives (FN): {fn}")
+
+sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0
+specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+npv = tn / (tn + fn) if (tn + fn) > 0 else 0
+
+print(f"\nSensitivity (Recall): {sensitivity:.4f}")
+print(f"Specificity:          {specificity:.4f}")
+print(f"Precision (PPV):      {precision:.4f}")
+print(f"Negative Pred Value:  {npv:.4f}")
+print(f"F1-Score:             {f1:.4f}")
+print(f"Accuracy:             {acc:.4f}")
 

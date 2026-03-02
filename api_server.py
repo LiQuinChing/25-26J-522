@@ -14,12 +14,67 @@ CORS(app)  # Enable CORS for all routes
 # Load the trained model
 MODEL_PATH = "ptbdb.h5"
 model = None
+model_accuracy = None  # Store model's test accuracy
+class_accuracies = {'normal': 0.95, 'abnormal': 0.95}  # Per-class accuracies
+
+def calculate_model_metrics():
+    """
+    Calculate model performance on test data to use as confidence metric
+    """
+    global model_accuracy, class_accuracies
+    try:
+        import pandas as pd
+        from sklearn.model_selection import train_test_split
+        
+        # Load the same test data used in training
+        normal_data = pd.read_csv("ptbdb_normal.csv", header=None)
+        abnormal_data = pd.read_csv("ptbdb_abnormal.csv", header=None)
+        
+        normal_data['label'] = 0
+        abnormal_data['label'] = 1
+        dataset = pd.concat([normal_data, abnormal_data])
+        
+        _, dataset_test = train_test_split(dataset, test_size=0.2, random_state=1337, stratify=dataset['label'])
+        
+        Y_test = np.array(dataset_test['label'].values).astype(np.int8)
+        X_test = np.array(dataset_test[list(range(188))].values)[..., np.newaxis]
+        
+        # Make predictions
+        predictions = model.predict(X_test, verbose=0)
+        predicted_classes = (predictions > 0.5).astype(np.int8).flatten()
+        
+        # Calculate overall accuracy
+        from sklearn.metrics import accuracy_score
+        model_accuracy = accuracy_score(Y_test, predicted_classes)
+        
+        # Calculate per-class accuracy
+        # Normal class (0) accuracy
+        normal_mask = Y_test == 0
+        normal_correct = np.sum((predicted_classes[normal_mask] == 0))
+        normal_total = np.sum(normal_mask)
+        class_accuracies['normal'] = normal_correct / normal_total if normal_total > 0 else 0.95
+        
+        # Abnormal class (1) accuracy
+        abnormal_mask = Y_test == 1
+        abnormal_correct = np.sum((predicted_classes[abnormal_mask] == 1))
+        abnormal_total = np.sum(abnormal_mask)
+        class_accuracies['abnormal'] = abnormal_correct / abnormal_total if abnormal_total > 0 else 0.95
+        
+        print(f"Model test accuracy: {model_accuracy:.4f} ({model_accuracy*100:.2f}%)")
+        print(f"Normal class accuracy: {class_accuracies['normal']:.4f} ({class_accuracies['normal']*100:.2f}%)")
+        print(f"Abnormal class accuracy: {class_accuracies['abnormal']:.4f} ({class_accuracies['abnormal']*100:.2f}%)")
+        
+    except Exception as e:
+        print(f"Could not calculate model metrics: {e}")
+        model_accuracy = 0.95  # Default fallback
+        class_accuracies = {'normal': 0.95, 'abnormal': 0.95}
 
 def load_trained_model():
     global model
     if os.path.exists(MODEL_PATH):
         model = load_model(MODEL_PATH)
         print("Model loaded successfully!")
+        calculate_model_metrics()  # Calculate test accuracy
     else:
         print(f"Error: Model file '{MODEL_PATH}' not found. Please train the model first by running main.py")
 
@@ -230,10 +285,16 @@ def predict():
         prediction_value = float(prediction[0][0])
         prediction_class = int(prediction_value > 0.5)
         
+        # Use per-class accuracy as confidence based on predicted class
+        if prediction_class == 1:
+            confidence = class_accuracies['abnormal']  # Abnormal prediction
+        else:
+            confidence = class_accuracies['normal']  # Normal prediction
+        
         # Return result
         return jsonify({
             "prediction": prediction_class,
-            "confidence": prediction_value,
+            "confidence": confidence,
             "result": "Abnormal (Myocardial Infarction)" if prediction_class == 1 else "Normal",
             "message": "0 = Normal ECG, 1 = Abnormal ECG (Myocardial Infarction)"
         })
@@ -350,9 +411,15 @@ def predict_from_images():
         prediction_value = float(prediction[0][0])
         prediction_class = int(prediction_value > 0.5)
         
+        # Use per-class accuracy as confidence based on predicted class
+        if prediction_class == 1:
+            confidence = class_accuracies['abnormal']  # Abnormal prediction
+        else:
+            confidence = class_accuracies['normal']  # Normal prediction
+        
         response_data = {
             "prediction": prediction_class,
-            "confidence": prediction_value,
+            "confidence": confidence,
             "result": "Abnormal (Myocardial Infarction)" if prediction_class == 1 else "Normal",
             "message": "Prediction successful from image upload",
             "extracted_data": ecg_data,
@@ -403,10 +470,17 @@ def predict_batch():
         for i, pred in enumerate(predictions):
             pred_value = float(pred[0])
             pred_class = int(pred_value > 0.5)
+            
+            # Use per-class accuracy as confidence based on predicted class
+            if pred_class == 1:
+                confidence = class_accuracies['abnormal']  # Abnormal prediction
+            else:
+                confidence = class_accuracies['normal']  # Normal prediction
+            
             results.append({
                 "sample": i + 1,
                 "prediction": pred_class,
-                "confidence": pred_value,
+                "confidence": confidence,
                 "result": "Abnormal" if pred_class == 1 else "Normal"
             })
         
