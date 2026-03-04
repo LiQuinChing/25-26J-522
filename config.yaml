@@ -1,0 +1,61 @@
+# Configuration for MI Detection Model
+
+# Data paths
+data:
+  dataset_root: "DataSet"
+  output_dir: "outputs"
+  model_dir: "models"
+  
+# Image settings
+image:
+  img_height: 96
+  img_width: 96
+  channels: 3
+
+# Training settings
+training:
+  batch_size: 8
+  epochs: 50
+  learning_rate: 0.0001
+  validation_split: 0.15
+  test_split: 0.15
+  seed: 42
+  
+# Model settings
+model:
+  backbone: "ResNet50"  # Options: ResNet50, EfficientNetB0, DenseNet121
+  pretrained: true
+  freeze_base: true
+  dropout_rate: 0.5
+  
+# Class information
+classes:
+  num_classes: 3
+  class_names: ["Normal", "Previous_MI", "Myocardial_Infarction"]
+  
+  # Class weights for imbalanced data (calculated from dataset distribution)
+  class_weights:
+    0: 1.0   # Normal
+    1: 4.2   # Previous MI
+    2: 11.1  # MI
+    
+# Augmentation settings
+augmentation:
+  rotation_limit: 15
+  brightness_limit: 0.2
+  contrast_limit: 0.2
+  horizontal_flip: true
+  zoom_range: 0.1
+  
+# Callbacks
+callbacks:
+  early_stopping:
+    patience: 10
+    monitor: "val_loss"
+  reduce_lr:
+    patience: 5
+    factor: 0.5
+    min_lr: 0.000001
+  model_checkpoint:
+    monitor: "val_accuracy"
+    save_best_only: true
