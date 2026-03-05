@@ -1,8 +1,8 @@
 Dependencies required:
 
-pip install pyjwt
-
 python -m venv venv
+
+venv\Scripts\activate
 
 python -m pip install --upgrade pip
 
@@ -15,6 +15,6 @@ pip install passlib[bcrypt]==1.7.4
 pip install google-auth 
 pip install pyjwt
 
-venv\Scripts\activate
+pip install opencv-python wfdb
 
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
