@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import Navbar from "../components/navbar";
 
 function UploadCADecg() {
@@ -11,6 +12,7 @@ function UploadCADecg() {
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
+  const [, setImageFile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +37,33 @@ function UploadCADecg() {
     fetchRecent();
 
   }, []);
+
+  const handleImageUpload = async (e) => {
+
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImageFile(file);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("http://localhost:8000/convert-ecg-image", {
+        method: "POST",
+        body: formData
+    });
+
+    const blob = await res.blob();
+
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Digitalized_ECG.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
 
   const handleFileChange = (e) => {
 
@@ -89,13 +118,13 @@ function UploadCADecg() {
         setUploadResult(data);
 
         } else {
-        alert("Upload failed");
+        toast.error("Upload failed. Please try again!");
         }
     };
 
     xhr.onerror = () => {
         setIsUploading(false);
-        alert("Upload error");
+        toast.error("An error occurred during upload. Please try again!");
     };
 
     xhr.send(formData);
@@ -178,44 +207,101 @@ function UploadCADecg() {
                     </h1>
 
                     <p className="text-slate-600 mt-2">
-                    Drag and drop your digitized ECG file here to begin AI-powered arrhythmia detection.
+                    Upload your digitized ECG file here to begin AI-powered Coronary Artery Disease (Ischemia) detection.
                     </p>
+
+                </div>
+
+                {/* ECG IMAGE CONVERSION */}
+
+                <div className="bg-white/40 backdrop-blur-lg rounded-xl p-6 border border-teal-200">
+
+                <h3 className="text-md font-bold text-teal-900 mb-4 flex items-center gap-2">
+
+                    <span className="material-symbols-outlined">
+                    image
+                    </span>
+
+                    Convert ECG Image to Digital Format
+
+                </h3>
+
+                <label className="flex flex-col items-center justify-center h-50 border-2 border-dashed border-teal-900/20 rounded-lg cursor-pointer bg-white/40 hover:bg-white/60 hover:border-teal-600 transition cursor-pointer p-10">
+
+                    <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    />
+
+                    <div className="flex flex-col items-center gap-4">
+
+                        <div className="h-20 w-20 rounded-full bg-teal-100 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-5xl text-teal-700">
+                                upload
+                            </span>
+                        </div>
+
+                        <p className="text-lg font-bold text-teal-900">
+
+                            Upload ECG strip image
+
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                            Supports (.png / .jpg)
+                        </p>
+
+                    </div>
+
+                </label>
 
                 </div>
 
                 {/* UPLOAD BOX */}
 
-                <label className="relative flex flex-col items-center justify-center h-[400px] rounded-xl border-2 border-dashed border-teal-900/20 bg-white/40 hover:bg-white/60 hover:border-teal-600 transition cursor-pointer p-10">
+                <div className="bg-white/40 backdrop-blur-lg rounded-xl p-6 border border-teal-200">
 
-                    <input
-                    type="file"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={handleFileChange}
-                    />
-
-                    <div className="flex flex-col items-center gap-4">
-
-                    <div className="h-20 w-20 rounded-full bg-teal-100 flex items-center justify-center">
-
-                        <span className="material-symbols-outlined text-5xl text-teal-700">
-                        monitor_heart
+                    <p className="text-md font-bold text-teal-900 mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined">
+                        image
                         </span>
-
-                    </div>
-
-                    <p className="text-xl font-bold text-teal-900">
-
-                        {file ? file.name : "Drop file here or Browse"}
-
+                        If you are having already digitized ECG files, upload them below.
                     </p>
+                    
+                    <label className="relative flex flex-col items-center justify-center h-[400px] rounded-xl border-2 border-dashed border-teal-900/20 bg-white/40 hover:bg-white/60 hover:border-teal-600 transition cursor-pointer p-10">
 
-                    <p className="text-sm text-gray-500">
-                        Supports .dat, .hea (Max 50MB)
-                    </p>
+                        <input
+                        type="file"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleFileChange}
+                        />
 
-                    </div>
+                        <div className="flex flex-col items-center gap-4">
 
-                </label>
+                        <div className="h-20 w-20 rounded-full bg-teal-100 flex items-center justify-center">
+
+                            <span className="material-symbols-outlined text-5xl text-teal-700">
+                            monitor_heart
+                            </span>
+
+                        </div>
+
+                        <p className="text-xl font-bold text-teal-900">
+
+                            {file ? file.name : "Drop file here or Browse"}
+
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                            Supports .dat, .hea (Max 50MB)
+                        </p>
+
+                        </div>
+
+                    </label>
+                </div>
 
                 {/* FILE INFO */}
 
@@ -320,7 +406,7 @@ function UploadCADecg() {
 
                 {/* RECENT ANALYSIS */}
 
-                <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-xl p-5 h-[490px]">
+                <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-xl p-5 h-[770px] flex flex-col">
 
                     {/* HEADER */}
                     <div className="flex justify-between items-center mb-4">
@@ -343,7 +429,7 @@ function UploadCADecg() {
 
                     {/* LIST */}
 
-                    <div className="space-y-5 max-h-[420px] overflow-y-auto pr-1">
+                    <div className="space-y-5 overflow-y-auto pr-1 flex-1 scrollbar-thin scrollbar-thumb-teal-400 scrollbar-track-transparent">
 
                         {recentScans.length === 0 && (
                         <p className="text-gray-500 text-sm">
