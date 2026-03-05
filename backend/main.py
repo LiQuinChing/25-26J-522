@@ -31,6 +31,9 @@ from email.utils import formataddr
 from auth import SECRET_KEY, ALGORITHM
 import random
 from dotenv import load_dotenv
+import cv2
+from fastapi.responses import FileResponse
+from fastapi import BackgroundTasks
 
 load_dotenv()
 
@@ -57,151 +60,234 @@ checkpoint = torch.load(MODEL_PATH, map_location=device)
 model.load_state_dict(checkpoint["model"])
 model.eval()
 
+# Endpoint to convert ECG image to digital format
+@app.post("/convert-ecg-image")
+async def convert_ecg_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+
+    TEMP_DIR = "temp_ecg"
+    os.makedirs(TEMP_DIR, exist_ok=True)
+
+    img_path = os.path.join(TEMP_DIR, file.filename)
+
+    with open(img_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    # Read image
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+
+    img = cv2.GaussianBlur(img, (5,5), 0)
+    _, thresh = cv2.threshold(img, 120, 255, cv2.THRESH_BINARY_INV)
+
+    height, width = thresh.shape
+    signal = []
+
+    for x in range(width):
+        column = thresh[:, x]
+        y_points = np.where(column > 0)[0]
+
+        if len(y_points) > 0:
+            y = np.mean(y_points)
+        else:
+            y = height / 2
+
+        signal.append(height - y)
+
+    signal = np.array(signal)
+
+    signal = (signal - np.mean(signal)) / np.std(signal)
+
+    if len(signal) < 2000:
+        repeats = int(np.ceil(2000 / len(signal)))
+        signal = np.tile(signal, repeats)
+
+    signal = signal[:2000]
+
+    fs = 500
+    record_name = "ecg_record"
+
+    wfdb.wrsamp(
+        record_name=record_name,
+        fs=fs,
+        units=["mV"],
+        sig_name=["LeadII"],
+        p_signal=signal.reshape(-1,1),
+        write_dir=TEMP_DIR
+    )
+
+    zip_path = os.path.join(TEMP_DIR, "Digitalized_ECG.zip")
+
+    with zipfile.ZipFile(zip_path, "w") as zipf:
+        zipf.write(os.path.join(TEMP_DIR, "ecg_record.dat"), "ecg_record.dat")
+        zipf.write(os.path.join(TEMP_DIR, "ecg_record.hea"), "ecg_record.hea")
+
+    # delete folder AFTER response
+    background_tasks.add_task(shutil.rmtree, TEMP_DIR)
+
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename="Digitalized_ECG.zip",
+        background=background_tasks
+    )
 
 @app.post("/analyze_ecg/")
 async def analyze_ecg(file: UploadFile = File(...), current_user: str = Depends(verify_token)):
     # Save uploaded file to temp
     UPLOAD_DIR = "uploaded_ecg"
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    temp_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(temp_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
 
-    # If ZIP, extract
-    if temp_path.endswith(".zip"):
-        with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-            zip_ref.extractall(UPLOAD_DIR)
-        os.remove(temp_path)  # remove zip after extraction
+    try:
+        temp_path = os.path.join(UPLOAD_DIR, file.filename)
+        with open(temp_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
 
-    # Find .hea file
-    hea_files = []
-    for root, dirs, files_in_dir in os.walk(UPLOAD_DIR):
-        for f in files_in_dir:
-            if f.endswith(".hea"):
-                hea_files.append(os.path.join(root, f))
+        # If ZIP, extract
+        if temp_path.endswith(".zip"):
+            with zipfile.ZipFile(temp_path, 'r') as zip_ref:
+                zip_ref.extractall(UPLOAD_DIR)
+            os.remove(temp_path)  # remove zip after extraction
 
-    if len(hea_files) == 0:
-        return {"error": "No .hea file found in uploaded data"}
+        # Find .hea file
+        hea_files = []
+        for root, dirs, files_in_dir in os.walk(UPLOAD_DIR):
+            for f in files_in_dir:
+                if f.endswith(".hea"):
+                    hea_files.append(os.path.join(root, f))
 
-    record_path = hea_files[0].replace(".hea", "")
-    record = wfdb.rdrecord(record_path)
-    signal = record.p_signal
-    fs = record.fs
+        if len(hea_files) == 0:
+            return {"error": "No .hea file found in uploaded data"}
 
-    # Extract Lead II for analysis
-    if signal.shape[1] >= 2:
-        lead2 = signal[:,1]
-    else:
-        lead2 = signal[:,0]
+        record_path = hea_files[0].replace(".hea", "")
+        record = wfdb.rdrecord(record_path)
+        signal = record.p_signal
+        fs = record.fs
 
-    # Clean ECG signal
-    ecg_clean = nk.ecg_clean(lead2, sampling_rate=fs)
+        # Extract Lead II for analysis
+        if signal.shape[1] >= 2:
+            lead2 = signal[:,1]
+        else:
+            lead2 = signal[:,0]
 
-    # Detect ECG waves
-    signals, info = nk.ecg_process(ecg_clean, sampling_rate=fs)
+        # Clean ECG signal
+        ecg_clean = nk.ecg_clean(lead2, sampling_rate=fs)
 
-    # Compute intervals
-    intervals = nk.ecg_intervalrelated(signals, sampling_rate=fs)
+        # Detect ECG waves
+        # signals, info = nk.ecg_process(ecg_clean, sampling_rate=fs)
 
-    # Heart Rate
-    heart_rate = float(np.nanmean(signals["ECG_Rate"]))
+        try:
+            signals, info = nk.ecg_process(ecg_clean, sampling_rate=fs)
+        except Exception:
+            # fallback if signal too short
+            signals = {"ECG_Rate": [0]}
+            intervals = {}
 
-    # PR interval
-    if "ECG_PR_Interval" in intervals.columns:
-        pr_interval = float(np.nanmean(intervals["ECG_PR_Interval"]))
-    else:
-        pr_interval = 0
+        # Compute intervals
+        intervals = nk.ecg_intervalrelated(signals, sampling_rate=fs)
 
-    # QRS duration
-    if "ECG_QRS_Duration" in intervals.columns:
-        qrs_duration = float(np.nanmean(intervals["ECG_QRS_Duration"]))
-    else:
-        qrs_duration = 0
+        # Heart Rate
+        heart_rate = float(np.nanmean(signals["ECG_Rate"]))
 
-    # QTc interval
-    if "ECG_QTc" in intervals.columns:
-        qtc_interval = float(np.nanmean(intervals["ECG_QTc"]))
-    else:
-        qtc_interval = 0
+        # PR interval
+        if "ECG_PR_Interval" in intervals.columns:
+            pr_interval = float(np.nanmean(intervals["ECG_PR_Interval"]))
+        else:
+            pr_interval = 0
 
-    # Run model prediction
-    result = predict_ecg_clinical(signal, model=model, device=device, fs=fs)
-    cad_detected = detect_cad_clinical(result)
+        # QRS duration
+        if "ECG_QRS_Duration" in intervals.columns:
+            qrs_duration = float(np.nanmean(intervals["ECG_QRS_Duration"]))
+        else:
+            qrs_duration = 0
 
-    # Plot segment-level probabilities
-    plt.figure(figsize=(10,3))
-    plt.plot(result["segment_probs"], marker='o')
-    plt.axhline(0.5, color='r', linestyle='--')
-    plt.xlabel("Segment Index")
-    plt.ylabel("Ischemia Probability")
-    plt.title("Segment-Level Ischemia Probabilities")
-    plt.grid(True)
-    plot_path = os.path.join(UPLOAD_DIR, "plot.png")
-    plt.savefig(plot_path)
-    plt.close()
+        # QTc interval
+        if "ECG_QTc" in intervals.columns:
+            qtc_interval = float(np.nanmean(intervals["ECG_QTc"]))
+        else:
+            qtc_interval = 0
 
-    # Read plot as bytes
-    with open(plot_path, "rb") as f:
-        plot_bytes = f.read()
+        # Run model prediction
+        result = predict_ecg_clinical(signal, model=model, device=device, fs=fs)
+        cad_detected = detect_cad_clinical(result)
 
-    # Cleanup
-    shutil.rmtree(UPLOAD_DIR)
+        # Plot segment-level probabilities
+        plt.figure(figsize=(10,3))
+        plt.plot(result["segment_probs"], marker='o')
+        plt.axhline(0.5, color='r', linestyle='--')
+        plt.xlabel("Segment Index")
+        plt.ylabel("Ischemia Probability")
+        plt.title("Segment-Level Ischemia Probabilities")
+        plt.grid(True)
+        plot_path = os.path.join(UPLOAD_DIR, "plot.png")
+        plt.savefig(plot_path)
+        plt.close()
 
-    # Extract Lead II for waveform display
-    if signal.shape[1] >= 2:
-        lead2 = signal[:,1]
-    else:
-        lead2 = signal[:,0]
+        # Read plot as bytes
+        with open(plot_path, "rb") as f:
+            plot_bytes = f.read()
 
-    # Reduce length for frontend rendering
-    lead2 = lead2[:5000]   # first 5000 samples
+        # Cleanup
+        shutil.rmtree(UPLOAD_DIR)
 
-    # Generate unique 4-digit scan ID
-    while True:
-        scan_id = str(random.randint(1000, 9999))
-        existing_scan = await ecg_scans_collection.find_one({"scan_id": scan_id})
-        if not existing_scan:
-            break
+        # Extract Lead II for waveform display
+        if signal.shape[1] >= 2:
+            lead2 = signal[:,1]
+        else:
+            lead2 = signal[:,0]
 
-    # get user information
-    user = await users_collection.find_one({"email": current_user})
+        # Reduce length for frontend rendering
+        lead2 = lead2[:5000]   # first 5000 samples
 
-    user_name = user["full_name"] if user else "Unknown"
+        # Generate unique 4-digit scan ID
+        while True:
+            scan_id = str(random.randint(1000, 9999))
+            existing_scan = await ecg_scans_collection.find_one({"scan_id": scan_id})
+            if not existing_scan:
+                break
 
-    # store analysis result
-    await ecg_scans_collection.insert_one({
-        "scan_id": scan_id,
-        "user_full_name": user_name,
-        "user_email": current_user,
-        "cad_detected": cad_detected,
-        "cad_score": round(result.get("cad_score",0)*100,2),
-        "p95": round(result.get("p95",0),3),
-        "ischemic_burden": round(result.get("ischemic_burden",0)*100,2),
-        "max_consecutive_segments": result.get("max_consecutive_segments",0),
-        "heart_rate": round(heart_rate,1),
-        "pr_interval": round(pr_interval,1),
-        "qrs_duration": round(qrs_duration,1),
-        "qtc_interval": round(qtc_interval,1),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
+        # get user information
+        user = await users_collection.find_one({"email": current_user})
 
-    return {
-        "scan_id": scan_id,
-        "cad_detected": cad_detected,
-        "cad_score": round(result.get("cad_score",0)*100,2),
-        "p95": round(result.get("p95",0),3),
-        "ischemic_burden": round(result.get("ischemic_burden",0)*100,2),
-        "max_consecutive_segments": result.get("max_consecutive_segments",0),
-        "plot_bytes": plot_bytes.hex(),  # send plot as hex string to frontend
-        "ecg_signal": lead2.tolist(),
-        "sampling_rate": fs,
+        user_name = user["full_name"] if user else "Unknown"
 
-        # ECG measurements
-        "heart_rate": round(heart_rate,1),
-        "pr_interval": round(pr_interval,1),
-        "qrs_duration": round(qrs_duration,1),
-        "qtc_interval": round(qtc_interval,1),
-    }
+        # store analysis result
+        await ecg_scans_collection.insert_one({
+            "scan_id": scan_id,
+            "user_full_name": user_name,
+            "user_email": current_user,
+            "cad_detected": cad_detected,
+            "cad_score": round(result.get("cad_score",0)*100,2),
+            "p95": round(result.get("p95",0),3),
+            "ischemic_burden": round(result.get("ischemic_burden",0)*100,2),
+            "max_consecutive_segments": result.get("max_consecutive_segments",0),
+            "heart_rate": round(heart_rate,1),
+            "pr_interval": round(pr_interval,1),
+            "qrs_duration": round(qrs_duration,1),
+            "qtc_interval": round(qtc_interval,1),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+
+        return {
+            "scan_id": scan_id,
+            "cad_detected": cad_detected,
+            "cad_score": round(result.get("cad_score",0)*100,2),
+            "p95": round(result.get("p95",0),3),
+            "ischemic_burden": round(result.get("ischemic_burden",0)*100,2),
+            "max_consecutive_segments": result.get("max_consecutive_segments",0),
+            "plot_bytes": plot_bytes.hex(),  # send plot as hex string to frontend
+            "ecg_signal": lead2.tolist(),
+            "sampling_rate": fs,
+
+            # ECG measurements
+            "heart_rate": round(heart_rate,1),
+            "pr_interval": round(pr_interval,1),
+            "qrs_duration": round(qrs_duration,1),
+            "qtc_interval": round(qtc_interval,1),
+        }
+    
+    finally:
+        # ALWAYS delete folder even if error happens
+        if os.path.exists(UPLOAD_DIR):
+            shutil.rmtree(UPLOAD_DIR)
 
 # Sign up endpoint
 @app.post("/signup")
@@ -401,7 +487,7 @@ async def get_recent_analysis(current_user: str = Depends(verify_token)):
     #     {"user_email": current_user}
     # ).sort("created_at", -1).limit(5)
 
-    cursor = ecg_scans_collection.find().sort("created_at", -1).limit(5)
+    cursor = ecg_scans_collection.find().sort("created_at", -1)
 
     async for scan in cursor:
         scans.append({
