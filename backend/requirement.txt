@@ -1,0 +1,20 @@
+Dependencies required:
+
+pip install pyjwt
+
+python -m venv venv
+
+python -m pip install --upgrade pip
+
+pip install fastapi uvicorn torch numpy scipy wfdb pandas matplotlib python-multipart neurokit2
+pip install pymongo motor passlib[bcrypt] python-jose[cryptography] email-validator authlib
+pip install python-dotenv 
+pip uninstall bcrypt passlib -y 
+pip install bcrypt==4.0.1
+pip install passlib[bcrypt]==1.7.4
+pip install google-auth 
+pip install pyjwt
+
+venv\Scripts\activate
+
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
