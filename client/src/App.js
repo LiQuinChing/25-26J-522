@@ -86,7 +86,7 @@ function App() {
             <section className="hero-section">
               <p className="breadcrumb">Home / Analysis / SVT Detection</p>
               <h2>ECG Analysis Workspace</h2>
-              <p className="subtitle">Enter ECG measurements and evaluate SVT risk using the trained ML model.</p>
+              
             </section>
 
             <div className="card">
