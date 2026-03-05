@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
+import './knowledgebase.css';
 import SVTForm from './components/SVTForm';
 import ResultDisplay from './components/ResultDisplay';
 import Header from './components/Header';
 import PatientDetailsForm from './components/PatientDetailsForm';
 import PatientHistory from './components/PatientHistory';
+import EcgKnowledgeBase from './pages/EcgKnowledgeBase';
 
 const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
 const PREDICT_URL = `${API_BASE_URL}/predict`;
 const PATIENT_API_URL = (process.env.REACT_APP_PATIENT_API_URL || 'http://localhost:5001/api').replace(/\/$/, '');
 
 function App() {
+  const [activeView, setActiveView] = useState('analysis');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -114,6 +117,14 @@ function App() {
     setSaveMessage(null);
   };
 
+  const handleNavigate = (view) => {
+    setActiveView(view);
+  };
+
+  if (activeView === 'knowledge-base') {
+    return <EcgKnowledgeBase onNavigate={handleNavigate} />;
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -142,13 +153,13 @@ function App() {
       </aside>
 
       <div className="app-main">
-        <Header />
+        <Header activeView={activeView} onNavigate={handleNavigate} />
 
         <main className="main-content">
           <div className="container">
             <section className="hero-section">
               <p className="breadcrumb">Home / Analysis / SVT Detection</p>
-              <h2>ECG Analysis Workspace</h2>
+              <h2>Supraventricular Tachycardia (SVT Detection)</h2>
               
             </section>
 
