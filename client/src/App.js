@@ -4,19 +4,69 @@ import './App.css';
 import SVTForm from './components/SVTForm';
 import ResultDisplay from './components/ResultDisplay';
 import Header from './components/Header';
+import PatientDetailsForm from './components/PatientDetailsForm';
+import PatientHistory from './components/PatientHistory';
 
 const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
 const PREDICT_URL = `${API_BASE_URL}/predict`;
+const PATIENT_API_URL = (process.env.REACT_APP_PATIENT_API_URL || 'http://localhost:5001/api').replace(/\/$/, '');
 
 function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [saveMessage, setSaveMessage] = useState(null);
+  const [patientDetails, setPatientDetails] = useState({
+    patient_id: '',
+    full_name: '',
+    age: '',
+    gender: '',
+    contact_number: '',
+    notes: '',
+  });
+
+  const isPatientDetailsValid = () => {
+    return (
+      patientDetails.patient_id.trim() &&
+      patientDetails.full_name.trim() &&
+      patientDetails.age &&
+      patientDetails.gender
+    );
+  };
+
+  const savePatientRecord = async (predictionData, ecgInput) => {
+    const payload = {
+      patient: {
+        ...patientDetails,
+        age: Number(patientDetails.age),
+      },
+      ecg: ecgInput,
+      prediction: {
+        label: predictionData.prediction.label,
+        svt_probability: predictionData.prediction.svt_probability,
+      },
+    };
+
+    const response = await axios.post(`${PATIENT_API_URL}/patients`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data;
+  };
 
   const handlePredict = async (formData) => {
+    if (!isPatientDetailsValid()) {
+      setError('Please enter Patient ID, Full Name, Age, and Gender before running prediction.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
+    setSaveMessage(null);
 
     try {
       const response = await axios.post(PREDICT_URL, formData, {
@@ -27,6 +77,18 @@ function App() {
 
       if (response.data.status === 'success') {
         setResult(response.data);
+
+        try {
+          const saveResponse = await savePatientRecord(response.data, formData);
+          setSaveMessage(
+            `Patient record saved. Novelty Score: ${saveResponse.novelty.score} (${saveResponse.novelty.label})`
+          );
+          setHistoryRefreshKey((prev) => prev + 1);
+        } catch (saveError) {
+          setSaveMessage(
+            `Prediction complete, but saving failed: ${saveError.response?.data?.message || saveError.message}`
+          );
+        }
       } else {
         setError(response.data.message || 'Prediction failed');
       }
@@ -49,6 +111,7 @@ function App() {
   const handleReset = () => {
     setResult(null);
     setError(null);
+    setSaveMessage(null);
   };
 
   return (
@@ -95,12 +158,23 @@ function App() {
                 <p className="subtitle">Clinical input values for model prediction</p>
               </div>
 
+              <PatientDetailsForm
+                value={patientDetails}
+                onChange={setPatientDetails}
+              />
+
               <SVTForm
                 onSubmit={handlePredict}
                 loading={loading}
                 onReset={handleReset}
                 hasResult={result !== null || error !== null}
               />
+
+              {saveMessage && (
+                <div className="save-info">
+                  {saveMessage}
+                </div>
+              )}
 
               {error && (
                 <div className="error-box">
@@ -113,6 +187,11 @@ function App() {
               )}
 
               {result && <ResultDisplay result={result} />}
+
+              <PatientHistory
+                apiBaseUrl={PATIENT_API_URL}
+                refreshKey={historyRefreshKey}
+              />
             </div>
           </div>
         </main>
