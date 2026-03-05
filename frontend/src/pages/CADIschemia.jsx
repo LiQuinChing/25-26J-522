@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function CADIschemia() {
   const [file, setFile] = useState(null);
@@ -6,6 +7,13 @@ function CADIschemia() {
   const [result, setResult] = useState(null);
   const fileInputRef = useRef(null);
   const [animatedScore, setAnimatedScore] = useState(0);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  };
 
   useEffect(() => {
     if (result) {
@@ -31,8 +39,13 @@ function CADIschemia() {
     formData.append("file", file);
 
     try {
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+
       const res = await fetch("http://localhost:8000/analyze_ecg/", {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -73,6 +86,13 @@ function CADIschemia() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center font-sans">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 m-10">
+
+        <button
+          onClick={handleLogout}
+          className="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-xl"
+        >
+          Logout
+        </button>
 
         {/* Header */}
         <h1 className="text-3xl font-bold text-center text-gray-800">
