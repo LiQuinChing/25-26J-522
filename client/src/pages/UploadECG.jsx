@@ -181,7 +181,7 @@ export default function UploadECG({ onResult }) {
                             type="text" 
                             value={patientName}
                             onChange={(e) => setPatientName(e.target.value)}
-                            placeholder="e.g. Jane Doe" 
+                            placeholder="e.g. Nimal Perera" 
                             className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                             disabled={isLoading}
                         />
