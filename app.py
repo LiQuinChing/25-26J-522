@@ -217,11 +217,12 @@ def get_classes():
     })
 
 if __name__ == '__main__':
+    port = int(os.getenv('FLASK_PORT', '5000'))
     load_predictor()
     print("\n" + "="*70)
     print(" " * 20 + "MI DETECTION API SERVER")
     print("="*70)
-    print("\nServer running at: http://localhost:5000")
+    print(f"\nServer running at: http://localhost:{port}")
     print("API Endpoints:")
     print("  • GET  /api/health      - Health check")
     print("  • POST /api/predict     - Predict from image")
@@ -229,4 +230,4 @@ if __name__ == '__main__':
     print("\nPress Ctrl+C to stop the server")
     print("="*70 + "\n")
     
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=port)
