@@ -13,3 +13,30 @@
   --color-cyan-500: #06b6d4;
   --color-cyan-900: #164e63;
 }
+
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+.bg-ecg-grid {
+  background-image:
+    linear-gradient(rgba(0,137,123,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,137,123,0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+@keyframes ecgMove {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.ecg-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: ecgMove 4s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(20,184,166,0.7));
+}

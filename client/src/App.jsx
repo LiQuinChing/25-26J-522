@@ -1,9 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Toaster } from "react-hot-toast";
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import UploadECG from './pages/UploadECG';
-// import ResultDisplay from './pages/ResultDisplay'; // ResultDisplay is now rendered inside UploadECG in our previous step, but you can separate them if you prefer.
 
-function App() {
+// Import Pages (Ensure these files exist in your client/src/pages folder)
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import UploadECG from './pages/UploadECG'; // Using the name from Branch 1
+import ResultDisplay from './pages/ResultDisplay';
+import ECGResult from "./pages/CADEcgResult"; 
+
+// Authentication Wrapper
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  return token ? children : <Navigate to="/login" />;
+};
+
+// Layout Wrapper from Branch 1 (Nav, Breadcrumbs, Footer)
+const DashboardLayout = ({ children }) => {
     return (
         <div className="min-h-screen bg-cyan-50 font-sans">
             {/* Top Navigation Bar */}
@@ -44,7 +61,7 @@ function App() {
 
             {/* Main Content Area */}
             <main>
-                <UploadECG />
+                {children}
             </main>
             
             {/* Footer */}
@@ -59,6 +76,73 @@ function App() {
             </footer>
         </div>
     );
+};
+
+// Main App Component with Routing
+function App() {
+  return (
+    <>
+      <Toaster position="bottom-left" />
+      <GoogleOAuthProvider clientId="498190765675-gcl6l325mvsqp2ge1ur311lg822lt0lh.apps.googleusercontent.com">
+        <Router>
+          <Routes>
+            {/* Public Routes (No Layout) */}
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+            {/* Protected Routes (Wrapped in DashboardLayout) */}
+            <Route
+              path="/upload-cad-ecg"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <UploadECG />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/upload-ecg"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <UploadECG />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/result-display"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <ResultDisplay />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/cad-ecg-result"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <ECGResult />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Default Fallback */}
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </Router>
+      </GoogleOAuthProvider>
+    </>
+  );
 }
 
 export default App;

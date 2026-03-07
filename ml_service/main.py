@@ -65,7 +65,7 @@ async def root():
     return {
         "message": "ECG Arrhythmia Classifier API",
         "version": "1.1.0",
-        "docs": "http://localhost:8000/docs",
+        "docs": "http://localhost:8001/docs",
         "model_loaded": is_model_loaded(),
         "note": "All signals are normalized using StandardScaler before prediction"
     }
@@ -320,4 +320,4 @@ async def general_exception_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True, log_level="info")

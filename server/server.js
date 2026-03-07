@@ -58,7 +58,7 @@ app.post('/api/upload-ecg', upload.single('file'), async (req, res) => {
         const formData = new FormData();
         formData.append('file', fileStream, req.file.originalname);
 
-        const pythonResponse = await axios.post('http://localhost:8000/upload-csv', formData, {
+        const pythonResponse = await axios.post('http://localhost:8001/upload-csv', formData, {
             headers: {
                 ...formData.getHeaders(),
             },
