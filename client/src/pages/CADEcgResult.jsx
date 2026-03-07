@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import Navbar from "../../components/Navbar.jsx";
+import Navbar from "../components/Navbar.jsx";
 
 function CADEcgResult() {
 
@@ -177,7 +177,7 @@ function CADEcgResult() {
 
   return (
     <>
-        <Navbar />
+    
 
         <div className="min-h-screen bg-[#B2EBF2] p-8">
 

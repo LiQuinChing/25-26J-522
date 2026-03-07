@@ -166,7 +166,7 @@ export default function UploadECG({ onResult }) {
     }
 
     return (
-        <div className="min-h-screen bg-cyan-50 p-8 font-sans">
+        <div className="min-h-screen bg-cyan-100 p-8 font-sans">
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
                 
                 {/* Main Upload Area */}

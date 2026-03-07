@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import Navbar from "../../components/Navbar.jsx";
+import Navbar from "../components/Navbar.jsx";
 
 function UploadCADecg() {
 
@@ -178,13 +178,12 @@ function UploadCADecg() {
 
   return (
     <>
-        <Navbar />
 
         <div className="min-h-screen bg-[#B2EBF2] relative font-sans">
 
             {/* BACKGROUND EFFECTS */}
 
-            <div className="fixed inset-0 bg-gradient-to-br from-[#B2EBF2] via-white/20 to-[#E0F7FA] opacity-90"></div>
+           
 
             {/* MAIN */}
 
