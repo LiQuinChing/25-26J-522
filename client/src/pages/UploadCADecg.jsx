@@ -481,7 +481,7 @@ function UploadCADecg() {
                                 </span>
 
                                 <span
-                                className={`text-xs font-semibold ${
+                                className={`text-xs font-bold ${
                                     scan.cad_detected
                                     ? "text-red-600"
                                     : "text-green-600"
