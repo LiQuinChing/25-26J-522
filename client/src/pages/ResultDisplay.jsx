@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
@@ -6,6 +6,9 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function ResultDisplay({ result, chartData, onBack }) {
+    useEffect(() => {
+        document.title = "QCardio - ECG Analysis Result";
+    }, []);
     
     // Data for the simple HTML-based Donut Chart visualization (replaces Recharts Pie)
     const confidencePct = Math.round(result.confidence * 100);

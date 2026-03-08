@@ -1,6 +1,11 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 const FAQ = () => {
+
+  useEffect(() => {
+    document.title = "QCardio - FAQ";
+  }, []);
+
   return (
     <div className="bg-bg-[#B2EBF2] font-display antialiased text-text-primary min-h-screen flex flex-col">
     
