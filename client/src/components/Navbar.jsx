@@ -24,12 +24,12 @@ export default function Navbar() {
         }`;
 
     return (
-        <nav className="bg-white/80 backdrop-blur-xl px-8 py-4 flex justify-between items-center border-b border-teal-900/10 shrink-0 sticky top-0 z-50 shadow-sm">
+        <nav className="bg-white/40 backdrop-blur-xl px-8 py-4 flex justify-between items-center border-b border-teal-900/10 shrink-0 sticky top-0 z-50 shadow-sm">
             
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
                 <i className="fas fa-heartbeat text-teal-500 text-2xl"></i>
-                <span className="text-xl font-extrabold text-teal-900 tracking-tight">CardioAI</span>
+                <span className="text-xl font-extrabold text-teal-900 tracking-tight">QCardio</span>
             </div>
             
             {/* Center Navigation */}
@@ -58,7 +58,7 @@ export default function Navbar() {
                 {/* Logout Button */}
                 <button 
                     onClick={handleLogout}
-                    className="text-red-500 font-bold hover:text-red-700 transition-colors ml-2 flex items-center gap-2"
+                    className="text-red-500 font-bold hover:text-red-700 transition-colors ml-2 flex items-center gap-2 cursor-pointer"
                 >
                     <i className="fas fa-sign-out-alt"></i> Logout
                 </button>
