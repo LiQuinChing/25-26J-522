@@ -32,7 +32,7 @@ export default function MainSidebar() {
                     
                     <NavLink to="/upload-cad-ecg" className={navLinkClasses}>
                         <i className="fas fa-heart-broken text-xl w-6 text-center"></i>
-                        <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>CAD</span>
+                        <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>CAD (Ischemia)</span>
                     </NavLink>
                     
                     <NavLink to="/svt-analysis" className={navLinkClasses}>

@@ -197,7 +197,10 @@ function SVTForm({ onSubmit, loading, onReset, hasResult }) {
               </>
             ) : (
               <>
-                🔍 Predict SVT
+                <span className="material-symbols-outlined">
+                  vital_signs
+                </span>
+                Predict SVT
               </>
             )}
           </button>

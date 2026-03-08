@@ -152,7 +152,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #20b7cc 0%, #1295b3 100%);
+  background: rgb(0, 129, 129);
   color: white;
   box-shadow: 0 6px 14px rgba(18, 149, 179, 0.24);
 }
@@ -168,7 +168,7 @@
 
 .btn-secondary {
   background: #ffffff;
-  color: #2f5f7e;
+  color: rgb(0, 129, 129);
   border-color: #b9d8e0;
 }
 
