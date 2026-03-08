@@ -1,12 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import Navbar from "../components/Navbar.jsx";
 
 function CADEcgResult() {
 
-  document.title = "QCardio - ECG Analysis Result";
   const { state } = useLocation();
   const navigate = useNavigate();
   const [animatedScore, setAnimatedScore] = useState(0);
@@ -40,6 +39,10 @@ function CADEcgResult() {
   const qtcStatus =
     qtcInterval > 450 ? "Prolonged" :
     "Normal Range";
+
+  useEffect(() => {
+    document.title = "QCardio - ECG Analysis Result";
+  }, []);
 
   useEffect(() => {
 
@@ -149,35 +152,61 @@ function CADEcgResult() {
     navigate(-1);
   };
 
+//   const exportReport = async () => {
+
+//     const element = reportRef.current;
+
+//     const canvas = await html2canvas(element, {
+//         scale: 2,
+//         useCORS: true
+//     });
+
+//     const imgData = canvas.toDataURL("image/png");
+
+//     const pdf = new jsPDF({
+//         orientation: "portrait",
+//         unit: "mm",
+//         format: "a4"
+//     });
+
+//     const imgWidth = 210;
+//     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+//     pdf.addImage(imgData, "PNG", 0, 10, imgWidth, imgHeight);
+
+//     pdf.save(`ECG_Report_${state.scan_id}.pdf`);
+
+//   };
+
   const exportReport = async () => {
+    if (!reportRef.current) return;
 
-    const element = reportRef.current;
+    try {
 
-    const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true
-    });
+        const dataUrl = await toPng(reportRef.current, {
+        cacheBust: true,
+        pixelRatio: 3,
+        backgroundColor: "#ffffff" // forces white background in PDF
+        });
 
-    const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
 
-    const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4"
-    });
+        const imgProps = pdf.getImageProperties(dataUrl);
 
-    const imgWidth = 210;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-    pdf.addImage(imgData, "PNG", 0, 10, imgWidth, imgHeight);
+        pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-    pdf.save(`ECG_Report_${state.scan_id}.pdf`);
+        pdf.save(`ECG_Report_${state.scan_id}.pdf`);
 
+    } catch (error) {
+        console.error("PDF export failed:", error);
+    }
   };
 
   return (
     <>
-    
 
         <div className="min-h-screen bg-[#B2EBF2] p-8">
 
@@ -221,12 +250,15 @@ function CADEcgResult() {
             {/* Export Button */}
 
             <button
-            onClick={exportReport}
-            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg shadow-sm hover:bg-gray-50 text-teal-700 text-sm font-bold transition duration-200"
+            onClick={() => {
+                console.log("Export clicked");
+                exportReport();
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg border-white shadow-sm hover:bg-gray-50 text-teal-700 text-sm font-bold transition duration-200 cursor-pointer"
             >
-
-            <span className="material-symbols-outlined text-[18px]">
-            picture_as_pdf
+                
+            <span className="material-symbols-rounded text-teal-600 text-[18px]">
+                picture_as_pdf
             </span>
 
             Export Report
@@ -251,7 +283,7 @@ function CADEcgResult() {
 
             </div>
 
-            <div ref={reportRef} className="space-y-6">
+            <div ref={reportRef} className="space-y-6 p-1">
 
                 {/* PATIENT HEADER */}
 
