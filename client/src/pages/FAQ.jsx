@@ -98,7 +98,7 @@ const FAQ = () => {
               <p className="text-white/80 text-sm mb-4">
                 Our specialized support team is available 24/7 for urgent clinical queries.
               </p>
-              <button className="w-full py-2 bg-white text-primary font-bold rounded-lg text-sm hover:bg-gray-50 transition-colors">
+              <button className="w-full py-2 bg-white text-primary font-bold rounded-lg text-sm hover:bg-gray-50 transition-colors text-blue-400">
                 Contact Support
               </button>
             </div>
