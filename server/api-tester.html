@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG Backend API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin-bottom: 5px;
+        }
+
+        header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .section {
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.loading {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #004085;
+        }
+
+        .endpoint-info {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            color: #666;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 ECG Backend API Tester</h1>
+            <p>Test and interact with your MongoDB backend</p>
+        </header>
+
+        <div class="content">
+            <!-- Patient Operations -->
+            <div class="section">
+                <h2>👤 Patient Operations</h2>
+
+                <div class="form-group">
+                    <label><strong>Get Patient</strong></label>
+                    <div class="endpoint-info">GET /api/patient/:patientId</div>
+                    <input type="text" id="getPatientId" placeholder="Enter Patient ID (e.g., P001)">
+                    <button onclick="getPatient()">Check Patient</button>
+                    <div id="getPatientResponse" class="response" style="display:none;"></div>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <div class="form-group">
+                    <label><strong>Create/Update Patient</strong></label>
+                    <div class="endpoint-info">POST /api/patient</div>
+                    <input type="text" id="createPatientId" placeholder="Patient ID (e.g., P001)">
+                    <input type="text" id="createPatientName" placeholder="Patient Name">
+                    <input type="email" id="createPatientEmail" placeholder="Email (optional)">
+                    <input type="text" id="createPatientPhone" placeholder="Phone (optional)">
+                    <button onclick="createPatient()">Create/Update Patient</button>
+                    <div id="createPatientResponse" class="response" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Result Operations -->
+            <div class="section">
+                <h2>📊 ECG Result Operations</h2>
+
+                <div class="form-group">
+                    <label><strong>Save ECG Result</strong></label>
+                    <div class="endpoint-info">POST /api/result</div>
+                    <input type="text" id="resultPatientId" placeholder="Patient ID (e.g., P001)">
+                    <input type="text" id="resultPatientName" placeholder="Patient Name">
+                    <select id="resultPrediction">
+                        <option value="">Select Prediction...</option>
+                        <option value="Normal">Normal</option>
+                        <option value="History of MI">History of MI</option>
+                        <option value="Myocardial Infarction">Myocardial Infarction</option>
+                    </select>
+                    <input type="number" id="resultConfidence" placeholder="Confidence (0-100)" min="0" max="100" step="0.1">
+                    <input type="text" id="resultImage" placeholder="Image Filename (optional)">
+                    <textarea id="resultNotes" placeholder="Additional Notes (optional)"></textarea>
+                    <button onclick="saveResult()">Save Result</button>
+                    <div id="saveResultResponse" class="response" style="display:none;"></div>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <div class="form-group">
+                    <label><strong>Get Patient Results</strong></label>
+                    <div class="endpoint-info">GET /api/results/:patientId</div>
+                    <input type="text" id="getResultsPatientId" placeholder="Enter Patient ID (e.g., P001)">
+                    <button onclick="getResults()">Get Results History</button>
+                    <div id="getResultsResponse" class="response" style="display:none;"></div>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <div class="form-group">
+                    <label><strong>Get All Results</strong></label>
+                    <div class="endpoint-info">GET /api/results (Paginated)</div>
+                    <input type="number" id="pageNum" placeholder="Page (default: 1)" value="1" min="1">
+                    <input type="number" id="limitNum" placeholder="Limit (default: 50)" value="50" min="1">
+                    <button onclick="getAllResults()">Get All Results</button>
+                    <div id="getAllResultsResponse" class="response" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Server Status -->
+            <div class="section">
+                <h2>🔌 Server Status</h2>
+                <div class="info-box">
+                    Make sure the backend server is running on <code>http://localhost:5000</code>
+                </div>
+                <button onclick="checkHealth()">Check Server Health</button>
+                <div id="healthResponse" class="response" style="display:none;"></div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <div class="form-group">
+                    <label><strong>API Base URL</strong></label>
+                    <input type="text" id="apiUrl" value="http://localhost:5000" placeholder="Enter API URL">
+                    <small style="color: #666;">Update if your server is running on a different URL</small>
+                </div>
+            </div>
+
+            <!-- Documentation -->
+            <div class="section">
+                <h2>📚 Quick Reference</h2>
+                <div class="info-box">
+                    <strong>Patient ID Format:</strong> Should be unique (e.g., P001, PATIENT_123)
+                </div>
+                <div class="info-box">
+                    <strong>Predictions:</strong>
+                    <ul>
+                        <li>Normal</li>
+                        <li>History of MI</li>
+                        <li>Myocardial Infarction</li>
+                    </ul>
+                </div>
+                <div class="info-box">
+                    <strong>Note:</strong> If a patient already exists, the name will be auto-filled when you check.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL_INPUT = document.getElementById('apiUrl');
+
+        function getApiUrl() {
+            return API_URL_INPUT.value.replace(/\/$/, ''); // Remove trailing slash
+        }
+
+        function showResponse(elementId, data, status) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.innerHTML = `<span class="status ${status}">${status.toUpperCase()}</span><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        function showError(elementId, error) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.innerHTML = `<span class="status error">ERROR</span><pre>${error}</pre>`;
+        }
+
+        async function checkHealth() {
+            try {
+                document.getElementById('healthResponse').innerHTML = '<span class="status loading">LOADING...</span>';
+                const response = await fetch(`${getApiUrl()}/health`);
+                const data = await response.json();
+                showResponse('healthResponse', data, 'success');
+            } catch (error) {
+                showError('healthResponse', `Cannot connect to server at ${getApiUrl()}\n\n${error.message}`);
+            }
+        }
+
+        async function getPatient() {
+            const patientId = document.getElementById('getPatientId').value;
+            if (!patientId) {
+                alert('Please enter a Patient ID');
+                return;
+            }
+
+            try {
+                document.getElementById('getPatientResponse').innerHTML = '<span class="status loading">LOADING...</span>';
+                const response = await fetch(`${getApiUrl()}/api/patient/${patientId}`);
+                const data = await response.json();
+                showResponse('getPatientResponse', data, data.success ? 'success' : 'error');
+            } catch (error) {
+                showError('getPatientResponse', error.message);
+            }
+        }
+
+        async function createPatient() {
+            const patientId = document.getElementById('createPatientId').value;
+            const name = document.getElementById('createPatientName').value;
+
+            if (!patientId || !name) {
+                alert('Please enter Patient ID and Name');
+                return;
+            }
+
+            const payload = {
+                patientId,
+                name,
+                email: document.getElementById('createPatientEmail').value || null,
+                phone: document.getElementById('createPatientPhone').value || null
+            };
+
+            try {
+                document.getElementById('createPatientResponse').innerHTML = '<span class="status loading">LOADING...</span>';
+                const response = await fetch(`${getApiUrl()}/api/patient`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                showResponse('createPatientResponse', data, data.success ? 'success' : 'error');
+            } catch (error) {
+                showError('createPatientResponse', error.message);
+            }
+        }
+
+        async function saveResult() {
+            const patientId = document.getElementById('resultPatientId').value;
+            const patientName = document.getElementById('resultPatientName').value;
+            const prediction = document.getElementById('resultPrediction').value;
+
+            if (!patientId || !patientName || !prediction) {
+                alert('Please fill in Patient ID, Patient Name, and Prediction');
+                return;
+            }
+
+            const payload = {
+                patientId,
+                patientName,
+                prediction,
+                confidence: parseFloat(document.getElementById('resultConfidence').value) || 0,
+                imageFile: document.getElementById('resultImage').value || null,
+                additionalNotes: document.getElementById('resultNotes').value || null
+            };
+
+            try {
+                document.getElementById('saveResultResponse').innerHTML = '<span class="status loading">LOADING...</span>';
+                const response = await fetch(`${getApiUrl()}/api/result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                showResponse('saveResultResponse', data, data.success ? 'success' : 'error');
+            } catch (error) {
+                showError('saveResultResponse', error.message);
+            }
+        }
+
+        async function getResults() {
+            const patientId = document.getElementById('getResultsPatientId').value;
+            if (!patientId) {
+                alert('Please enter a Patient ID');
+                return;
+            }
+
+            try {
+                document.getElementById('getResultsResponse').innerHTML = '<span class="status loading">LOADING...</span>';
+                const response = await fetch(`${getApiUrl()}/api/results/${patientId}`);
+                const data = await response.json();
+                showResponse('getResultsResponse', data, data.success ? 'success' : 'error');
+            } catch (error) {
+                showError('getResultsResponse', error.message);
+            }
+        }
+
+        async function getAllResults() {
+            const page = document.getElementById('pageNum').value || 1;
+            const limit = document.getElementById('limitNum').value || 50;
+
+            try {
+                document.getElementById('getAllResultsResponse').innerHTML = '<span class="status loading">LOADING...</span>';
+                const response = await fetch(`${getApiUrl()}/api/results?page=${page}&limit=${limit}`);
+                const data = await response.json();
+                showResponse('getAllResultsResponse', data, data.success ? 'success' : 'error');
+            } catch (error) {
+                showError('getAllResultsResponse', error.message);
+            }
+        }
+
+        // Auto-check health on page load
+        window.addEventListener('load', checkHealth);
+    </script>
+</body>
+</html>

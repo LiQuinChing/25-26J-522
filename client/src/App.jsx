@@ -16,12 +16,13 @@ import ResetPassword from "./pages/ResetPassword";
 import UploadECG from './pages/UploadECG'; 
 import ResultDisplay from './pages/ResultDisplay';
 //thisal
-import UploadCADEcg from './pages/UploadCADecg';
+import UploadCADecg from './pages/UploadCADecg';
 import ECGResult from "./pages/CADEcgResult"; 
 //ayesh
 import EcgKnowledgeBase from './pages/EcgKnowledgeBase'; 
 import SvtAnalysis from './pages/SvtAnalysis';
-import UploadCADecg from './pages/UploadCADecg';
+//ravindu
+import MyocardialInfarction from './pages/MyocardialInfarction';
 
 // Authentication Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -139,9 +140,19 @@ function App() {
             <ProtectedRoute>
                 <DashboardLayout>
                     <SvtAnalysis />
-                    </DashboardLayout>
-                    </ProtectedRoute>
+                </DashboardLayout>
+            </ProtectedRoute>
                 } 
+            />
+            <Route 
+            path="/myocardial-infarction" 
+            element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <MyocardialInfarction />
+              </DashboardLayout>
+            </ProtectedRoute>
+                  } 
             />
 
             

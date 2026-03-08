@@ -40,14 +40,10 @@ export default function MainSidebar() {
                         <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>SVT</span>
                     </NavLink>
 
-                    {/* Future Module Placeholder */}
-                    <div className={`px-4 py-3 rounded-lg font-bold text-gray-400 cursor-not-allowed opacity-60 flex items-center gap-4 whitespace-nowrap mt-4 ${isExpanded ? '' : 'justify-center'}`}>
-                        <i className="fas fa-vials text-xl w-6 text-center"></i> 
-                        <span className={`transition-opacity duration-300 flex items-center gap-2 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>
-                            Myocardial 
-                            <span className="text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded uppercase tracking-wider">Soon</span>
-                        </span>
-                    </div>
+                    <NavLink to="/myocardial-infarction" className={navLinkClasses}>
+                        <i className="fas fa-bolt text-xl w-6 text-center"></i>
+                        <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Myocardial Infarction</span>
+                    </NavLink>
                 </nav>
             </div>
         </aside>
