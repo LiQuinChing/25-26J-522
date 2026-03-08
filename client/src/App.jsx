@@ -71,7 +71,7 @@ function App() {
   return (
     <>
       <Toaster position="bottom-left" />
-      <GoogleOAuthProvider clientId="498190765675-gcl6l325mvsqp2ge1ur311lg822lt0lh.apps.googleusercontent.com">
+      <GoogleOAuthProvider clientId="498190765675-6dd7d3j8po0l396kpuj1t9fsr0cn6teq.apps.googleusercontent.com">
         <Router>
           <Routes>
             {/* Public Routes (No Layout) */}
