@@ -23,6 +23,7 @@ import EcgKnowledgeBase from './pages/EcgKnowledgeBase';
 import SvtAnalysis from './pages/SvtAnalysis';
 //ravindu
 import MyocardialInfarction from './pages/MyocardialInfarction';
+import FAQ from './pages/FAQ';
 
 // Authentication Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -123,7 +124,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* --- NEW Branch 3 Routes --- */}
+            {/* --- NEW Branch 3 Routes ayesh--- */}
             <Route 
             path="/knowledge-base" 
             element={
@@ -154,8 +155,17 @@ function App() {
             </ProtectedRoute>
                   } 
             />
-
             
+          <Route 
+              path="/faq" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <FAQ />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
             {/* Default Fallback */}
             <Route path="*" element={<Navigate to="/login" />} />
           </Routes>
