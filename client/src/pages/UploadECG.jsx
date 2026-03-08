@@ -175,14 +175,14 @@ export default function UploadECG({ onResult }) {
                     <p className="text-teal-700 mb-6">Enter the patient details and drop the digitized CSV file to begin AI analysis.</p>
                     
                     {/* Patient Name Input */}
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-cyan-100 mb-4">
+                    <div className="bg-white/50 p-4 rounded-xl shadow-sm border border-cyan-100 mb-4">
                         <label className="block text-sm font-bold text-teal-900 mb-2">Patient Full Name</label>
                         <input 
                             type="text" 
                             value={patientName}
                             onChange={(e) => setPatientName(e.target.value)}
                             placeholder="e.g. Nimal Perera" 
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                            className="bg-white w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                             disabled={isLoading}
                         />
                     </div>
@@ -231,7 +231,7 @@ export default function UploadECG({ onResult }) {
 
                 {/* Right Sidebar (Recent Analysis & Formats) */}
                 <div className="w-full lg:w-80 flex flex-col gap-6">
-                    <div className="bg-white rounded-xl shadow-sm p-6 border border-cyan-100">
+                    <div className="bg-white/50 rounded-xl shadow-sm p-6 border border-cyan-100">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-teal-900"><i className="fas fa-history mr-2"></i>Recent Analysis</h3>
                             <span className="text-xs text-teal-600 font-semibold bg-teal-50 px-2 py-1 rounded">Live DB</span>

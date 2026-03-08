@@ -208,7 +208,7 @@ function CADEcgResult() {
   return (
     <>
 
-        <div className="min-h-screen bg-[#B2EBF2] p-8">
+        <div className="min-h-screen bg-cyan-100 p-8">
 
         <div className="max-w-7xl mx-auto space-y-6">
 

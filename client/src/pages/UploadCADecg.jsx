@@ -179,7 +179,7 @@ function UploadCADecg() {
   return (
     <>
 
-        <div className="min-h-screen bg-[#B2EBF2] relative font-sans">
+        <div className="min-h-screen bg-cyan-100 relative font-sans">
 
             {/* BACKGROUND EFFECTS */}
 
@@ -213,7 +213,7 @@ function UploadCADecg() {
 
                 {/* ECG IMAGE CONVERSION */}
 
-                <div className="bg-white/40 backdrop-blur-lg rounded-xl p-6 border border-teal-200">
+                <div className="bg-white/50 backdrop-blur-lg rounded-xl p-6 border border-teal-200">
 
                 <h3 className="text-md font-bold text-teal-900 mb-4 flex items-center gap-2">
 
@@ -225,7 +225,7 @@ function UploadCADecg() {
 
                 </h3>
 
-                <label className="flex flex-col items-center justify-center h-50 border-2 border-dashed border-teal-900/20 rounded-lg cursor-pointer bg-white/40 hover:bg-white/60 hover:border-teal-600 transition cursor-pointer p-10">
+                <label className="flex flex-col items-center justify-center h-50 border-2 border-dashed border-teal-900/20 rounded-lg cursor-pointer bg-white/40 hover:bg-white hover:border-teal-600 transition cursor-pointer p-10">
 
                     <input
                     type="file"
@@ -260,7 +260,7 @@ function UploadCADecg() {
 
                 {/* UPLOAD BOX */}
 
-                <div className="bg-white/40 backdrop-blur-lg rounded-xl p-6 border border-teal-200">
+                <div className="bg-white/50 backdrop-blur-lg rounded-xl p-6 border border-teal-200">
 
                     <p className="text-md font-bold text-teal-900 mb-4 flex items-center gap-2">
                         <span className="material-symbols-outlined">
@@ -269,7 +269,7 @@ function UploadCADecg() {
                         If you are having already digitized ECG files, upload them below.
                     </p>
                     
-                    <label className="relative flex flex-col items-center justify-center h-[400px] rounded-xl border-2 border-dashed border-teal-900/20 bg-white/40 hover:bg-white/60 hover:border-teal-600 transition cursor-pointer p-10">
+                    <label className="relative flex flex-col items-center justify-center h-[400px] rounded-xl border-2 border-dashed border-teal-900/20 bg-white/40 hover:bg-white hover:border-teal-600 transition cursor-pointer p-10">
 
                         <input
                         type="file"
@@ -405,7 +405,7 @@ function UploadCADecg() {
 
                 {/* RECENT ANALYSIS */}
 
-                <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-xl p-5 h-[770px] flex flex-col">
+                <div className="bg-white/50 backdrop-blur-lg rounded-2xl shadow-xl p-5 h-[770px] flex flex-col">
 
                     {/* HEADER */}
                     <div className="flex justify-between items-center mb-4">

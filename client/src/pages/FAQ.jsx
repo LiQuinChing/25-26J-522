@@ -2,7 +2,7 @@ import React from 'react'
 
 const FAQ = () => {
   return (
-    <div className="bg-cyan-100 font-display antialiased text-text-primary min-h-screen flex flex-col">
+    <div className="bg-bg-[#B2EBF2] font-display antialiased text-text-primary min-h-screen flex flex-col">
     
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col items-center w-full px-4 sm:px-6 py-8 sm:py-12">

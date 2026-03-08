@@ -165,7 +165,7 @@ export default function MyocardialInfarction() {
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-7xl mx-auto">
+    <div className="flex flex-col items-center w-full max-w-7xl mx-auto px-4 py-8">
       {/* Hero Section */}
       <div className="w-full flex flex-col items-center text-center mb-12 space-y-6">
         <div className="bg-white/80 backdrop-blur-sm px-6 py-2 rounded-full border border-cyan-100 shadow-sm inline-flex items-center gap-2 mb-2">
