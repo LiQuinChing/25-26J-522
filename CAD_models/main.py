@@ -447,7 +447,7 @@ async def forgot_password(data: ForgotPasswordRequest):
         {"email": data.email}
     )
 
-    reset_link = f"http://localhost:3000/reset-password/{token}"
+    reset_link = f"http://localhost:5173/reset-password/{token}"
 
     send_reset_email(data.email, reset_link)
 
