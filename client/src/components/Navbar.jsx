@@ -28,7 +28,8 @@ export default function Navbar() {
             
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-                <i className="fas fa-heartbeat text-teal-500 text-2xl"></i>
+                {/* <i className="fas fa-heartbeat text-teal-500 text-2xl"></i> */}
+                <img src="/logo.png" alt="QCardio Logo" className="w-7 h-6" />
                 <span className="text-xl font-extrabold text-teal-900 tracking-tight">QCardio</span>
             </div>
             
