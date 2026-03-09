@@ -10,13 +10,15 @@ const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY_SVT || process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 // ==========================================
 // 1. MIDDLEWARE
 // ==========================================
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('dev')); // Logs API requests to the terminal
 
 // ==========================================
@@ -120,6 +122,135 @@ const validatePayload = (payload) => {
     if (!payload.patient || !payload.ecg || !payload.prediction) return 'patient, ecg, and prediction objects are required.';
     // (Kept shorter here for brevity, but functionality remains identical)
     return null; 
+};
+
+const normalizeSvtGuidance = (parsed) => ({
+    summary: typeof parsed?.summary === 'string' ? parsed.summary : 'No summary available.',
+    preventionSteps: Array.isArray(parsed?.preventionSteps) ? parsed.preventionSteps.filter(Boolean).slice(0, 8) : [],
+    urgentSigns: Array.isArray(parsed?.urgentSigns) ? parsed.urgentSigns.filter(Boolean).slice(0, 8) : [],
+    followUpQuestions: Array.isArray(parsed?.followUpQuestions) ? parsed.followUpQuestions.filter(Boolean).slice(0, 6) : [],
+    dailyCare: Array.isArray(parsed?.dailyCare) ? parsed.dailyCare.filter(Boolean).slice(0, 8) : [],
+    disclaimer: typeof parsed?.disclaimer === 'string' ? parsed.disclaimer : 'This is educational information only and not a diagnosis.'
+});
+
+const buildSvtFallbackGuidance = (prediction, ecg, novelty) => {
+    const label = String(prediction?.label || 'Unknown');
+    const probability = Number(prediction?.svt_probability || 0);
+    const noveltyLabel = novelty?.label ? ` Novelty pattern: ${novelty.label}.` : '';
+
+    return {
+        summary: label === 'SVT'
+            ? `The model found a pattern consistent with supraventricular tachycardia with an estimated probability of ${(probability * 100).toFixed(1)}%.${noveltyLabel} Clinical review is recommended, especially if symptoms are present.`
+            : `The model did not classify this pattern as SVT.${noveltyLabel} Symptoms and clinician review still matter even when the model output is reassuring.`,
+        preventionSteps: [
+            'Arrange clinical review if palpitations, dizziness, chest discomfort, or fainting episodes are happening.',
+            'Avoid triggers that can worsen fast rhythms, including excess caffeine, nicotine, stimulant drugs, or sleep deprivation.',
+            'Keep blood pressure, thyroid disease, dehydration, and stress under good control because they can aggravate rhythm problems.',
+            'Take prescribed medicines exactly as directed and discuss any side effects with a clinician before stopping them.',
+            'Track episodes with time, activity, duration, and symptoms so a clinician can compare them with ECG findings.'
+        ],
+        urgentSigns: [
+            'Fainting or nearly fainting',
+            'Chest pain or chest pressure',
+            'Severe shortness of breath',
+            'Sustained rapid heartbeat with weakness or confusion',
+            'New worsening symptoms or symptoms that do not settle quickly'
+        ],
+        followUpQuestions: [
+            'Do I need a 12-lead ECG, Holter monitor, or event monitor?',
+            'What common triggers should I reduce based on my symptoms and history?',
+            'Would vagal maneuvers be appropriate for me, and when should I avoid them?',
+            'Do I need a cardiology review or electrophysiology referral?',
+            'What symptoms mean I should seek urgent or emergency care immediately?'
+        ],
+        dailyCare: [
+            `Monitor resting heart rate and symptoms such as palpitations, dizziness, or fatigue.${ecg?.heart_rate_bpm ? ` Current entered heart rate: ${ecg.heart_rate_bpm} bpm.` : ''}`,
+            'Stay hydrated and avoid long periods without sleep.',
+            'Limit energy drinks and non-prescribed stimulants.',
+            'Discuss safe exercise intensity with a clinician if episodes happen during activity.'
+        ],
+        disclaimer: 'Gemini guidance was unavailable, so this fallback uses general educational SVT advice. It is not a diagnosis or emergency triage decision.'
+    };
+};
+
+const extractGeminiText = (responseData) => {
+    const candidate = responseData?.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+
+    return parts
+        .map((part) => part?.text || '')
+        .join('')
+        .trim();
+};
+
+const generateSvtGuidance = async ({ patient, ecg, prediction, novelty }) => {
+    if (!GEMINI_API_KEY) {
+        const error = new Error('Gemini API key is not configured on the backend.');
+        error.statusCode = 503;
+        throw error;
+    }
+
+    const prompt = [
+        'You are assisting with educational follow-up information for an SVT screening app.',
+        'Use the supplied structured ECG inputs and model output only to provide clear patient-friendly educational guidance.',
+        'Do not claim a diagnosis. Do not promise a cure. Do not replace clinician judgment.',
+        'Return strict JSON with these keys only: summary, preventionSteps, urgentSigns, followUpQuestions, dailyCare, disclaimer.',
+        'preventionSteps, urgentSigns, followUpQuestions, and dailyCare must be arrays of short strings.',
+        `Patient ID: ${patient?.patient_id || 'Unknown'}`,
+        `Patient name: ${patient?.full_name || 'Unknown'}`,
+        `Age: ${patient?.age ?? 'Unknown'}`,
+        `Gender: ${patient?.gender || 'Unknown'}`,
+        `Heart rate bpm: ${ecg?.heart_rate_bpm ?? 'Unknown'}`,
+        `PR interval s: ${ecg?.pr_interval_s ?? 'Unknown'}`,
+        `QRS duration s: ${ecg?.qrs_duration_s ?? 'Unknown'}`,
+        `RR regularity: ${ecg?.rr_regularity || 'Unknown'}`,
+        `P wave presence: ${ecg?.p_wave_presence}`,
+        `Model label: ${prediction?.label || 'Unknown'}`,
+        `SVT probability: ${prediction?.svt_probability ?? 'Unknown'}`,
+        `Novelty score: ${novelty?.score ?? 'Unknown'}`,
+        `Novelty label: ${novelty?.label || 'Unknown'}`,
+        'Always include guidance on urgent symptoms such as chest pain, fainting, severe shortness of breath, or prolonged rapid heartbeat.'
+    ].join('\n');
+
+    const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                responseMimeType: 'application/json'
+            }
+        },
+        {
+            timeout: 30000,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }
+    );
+
+    const text = extractGeminiText(response.data);
+    if (!text) {
+        const error = new Error('Gemini returned an empty response.');
+        error.statusCode = 502;
+        throw error;
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(text);
+    } catch (_error) {
+        const parseError = new Error('Gemini returned an unreadable response.');
+        parseError.statusCode = 502;
+        throw parseError;
+    }
+
+    return normalizeSvtGuidance(parsed);
 };
 
 // ==========================================
@@ -229,6 +360,41 @@ app.get('/api/patients/:patientId/history', async (req, res) => {
         res.json({ status: 'success', total: rows.length, records: rows });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
+    }
+});
+
+app.post('/api/svt-guidance', async (req, res) => {
+    try {
+        const { patient, ecg, prediction, novelty } = req.body;
+
+        if (!patient || !ecg || !prediction) {
+            return res.status(400).json({
+                success: false,
+                error: 'patient, ecg, and prediction are required'
+            });
+        }
+
+        const guidance = await generateSvtGuidance({ patient, ecg, prediction, novelty });
+
+        res.json({
+            success: true,
+            guidance,
+            source: 'gemini'
+        });
+    } catch (error) {
+        if (error.response?.status === 429 || error.response?.status >= 500) {
+            return res.json({
+                success: true,
+                guidance: buildSvtFallbackGuidance(req.body.prediction, req.body.ecg, req.body.novelty),
+                source: 'fallback'
+            });
+        }
+
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            success: false,
+            error: error.message || 'Failed to generate SVT guidance'
+        });
     }
 });
 

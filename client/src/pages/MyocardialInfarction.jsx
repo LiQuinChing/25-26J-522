@@ -13,6 +13,9 @@ export default function MyocardialInfarction() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
+  const [aiGuidance, setAiGuidance] = useState(null);
+  const [aiGuidanceLoading, setAiGuidanceLoading] = useState(false);
+  const [aiGuidanceError, setAiGuidanceError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -35,6 +38,35 @@ export default function MyocardialInfarction() {
     if (typeof value !== 'number' || Number.isNaN(value)) return 'N/A';
     const percent = value <= 1 ? value * 100 : value;
     return `${percent.toFixed(1)}%`;
+  };
+
+  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not read the ECG image for AI guidance.'));
+    reader.readAsDataURL(file);
+  });
+
+  const requestAiGuidance = async (predictionResponse, imageDataUrl) => {
+    setAiGuidanceLoading(true);
+    setAiGuidanceError('');
+
+    try {
+      const response = await axios.post(`${BACKEND_API_URL}/api/mi-guidance`, {
+        patientId: patientId.trim(),
+        patientName: patientName.trim(),
+        prediction: normalizePredictionForBackend(predictionResponse.predicted_class),
+        confidence: predictionResponse.confidence,
+        imageDataUrl,
+      });
+
+      setAiGuidance(response.data.guidance || null);
+    } catch (err) {
+      setAiGuidance(null);
+      setAiGuidanceError(err.response?.data?.error || 'Failed to generate AI guidance.');
+    } finally {
+      setAiGuidanceLoading(false);
+    }
   };
 
   const loadHistory = async (targetPatientId = '') => {
@@ -79,6 +111,8 @@ export default function MyocardialInfarction() {
     if (file) {
       setSelectedFile(file);
       setResult(null);
+      setAiGuidance(null);
+      setAiGuidanceError('');
       setError(null);
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result);
@@ -100,11 +134,14 @@ export default function MyocardialInfarction() {
     setError(null);
     setSaveMessage('');
     setResult(null);
+    setAiGuidance(null);
+    setAiGuidanceError('');
 
     const formData = new FormData();
     formData.append('image', selectedFile);
 
     try {
+      const imageDataUrl = preview || await fileToDataUrl(selectedFile);
       const response = await axios.post(`${ML_API_URL}/api/predict`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -130,6 +167,7 @@ export default function MyocardialInfarction() {
 
         setSaveMessage('Result saved to backend history successfully.');
         await loadHistory(patientId.trim());
+        await requestAiGuidance(response.data, imageDataUrl);
       } else {
         setError(response.data.error || 'Prediction failed');
       }
@@ -149,6 +187,8 @@ export default function MyocardialInfarction() {
     setSelectedFile(null);
     setPreview(null);
     setResult(null);
+    setAiGuidance(null);
+    setAiGuidanceError('');
     setError(null);
   };
 
@@ -265,6 +305,89 @@ export default function MyocardialInfarction() {
             </div>
           </div>
         </div>
+      )}
+
+      {(aiGuidanceLoading || aiGuidance || aiGuidanceError) && (
+        <section className="w-full max-w-4xl mt-8">
+          <div className="bg-white rounded-xl shadow-md border border-cyan-100 overflow-hidden">
+            <div className="p-6 border-b border-cyan-100">
+              <h3 className="text-xl font-bold text-teal-900">AI Guidance</h3>
+              <p className="text-sm text-gray-500 mt-1">Readable follow-up information based on the ECG image and the MI model output.</p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {aiGuidanceLoading && (
+                <div className="flex items-center gap-3 text-gray-600">
+                  <span className="material-symbols-outlined animate-spin">refresh</span>
+                  <span>Generating readable guidance...</span>
+                </div>
+              )}
+
+              {aiGuidanceError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+                  {aiGuidanceError}
+                </div>
+              )}
+
+              {aiGuidance && (
+                <>
+                  <div className="rounded-xl bg-cyan-50 border border-cyan-100 p-5">
+                    <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Summary</h4>
+                    <p className="text-gray-800 leading-7">{aiGuidance.summary}</p>
+                  </div>
+
+                  <div className="rounded-xl bg-amber-50 border border-amber-100 p-5">
+                    <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Time-To-Event Assessment</h4>
+                    <p className="text-gray-800 leading-7">{aiGuidance.timeToEventAssessment}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="rounded-xl border border-cyan-100 p-5">
+                      <h4 className="text-lg font-bold text-teal-900 mb-3">Prevention And Next Steps</h4>
+                      <ul className="space-y-3 text-gray-800">
+                        {aiGuidance.preventionSteps?.map((item, index) => (
+                          <li key={`prevention-${index}`} className="flex items-start gap-3">
+                            <span className="material-symbols-outlined text-teal-600 mt-0.5">check_circle</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="rounded-xl border border-red-100 p-5">
+                      <h4 className="text-lg font-bold text-red-700 mb-3">Get Urgent Medical Help If</h4>
+                      <ul className="space-y-3 text-gray-800">
+                        {aiGuidance.urgentSigns?.map((item, index) => (
+                          <li key={`urgent-${index}`} className="flex items-start gap-3">
+                            <span className="material-symbols-outlined text-red-600 mt-0.5">warning</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-cyan-100 p-5">
+                    <h4 className="text-lg font-bold text-teal-900 mb-3">Questions To Ask A Clinician</h4>
+                    <ul className="space-y-3 text-gray-800">
+                      {aiGuidance.followUpQuestions?.map((item, index) => (
+                        <li key={`question-${index}`} className="flex items-start gap-3">
+                          <span className="material-symbols-outlined text-cyan-700 mt-0.5">help</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 p-5">
+                    <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Important</h4>
+                    <p className="text-gray-700 leading-7">{aiGuidance.disclaimer}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* History Section */}

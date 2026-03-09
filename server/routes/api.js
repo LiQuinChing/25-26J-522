@@ -1,5 +1,163 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const axios = require('axios');
 const router = express.Router();
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY_MI || process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+
+function extractImagePayload(imageDataUrl) {
+  if (!imageDataUrl || typeof imageDataUrl !== 'string') {
+    return null;
+  }
+
+  const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    mimeType: match[1],
+    data: match[2]
+  };
+}
+
+function extractGeminiText(responseData) {
+  const candidate = responseData?.candidates?.[0];
+  const parts = candidate?.content?.parts || [];
+
+  return parts
+    .map((part) => part?.text || '')
+    .join('')
+    .trim();
+}
+
+function normalizeGuidancePayload(parsed) {
+  const fallback = 'Cannot be determined from an ECG image alone. A time-to-heart-attack estimate would be medically unreliable. Urgent symptoms require immediate in-person medical care.';
+
+  return {
+    summary: typeof parsed?.summary === 'string' ? parsed.summary : 'No summary available.',
+    preventionSteps: Array.isArray(parsed?.preventionSteps) ? parsed.preventionSteps.filter(Boolean).slice(0, 8) : [],
+    urgentSigns: Array.isArray(parsed?.urgentSigns) ? parsed.urgentSigns.filter(Boolean).slice(0, 8) : [],
+    followUpQuestions: Array.isArray(parsed?.followUpQuestions) ? parsed.followUpQuestions.filter(Boolean).slice(0, 6) : [],
+    timeToEventAssessment: typeof parsed?.timeToEventAssessment === 'string' ? parsed.timeToEventAssessment : fallback,
+    disclaimer: typeof parsed?.disclaimer === 'string' ? parsed.disclaimer : 'This is educational information only and not a diagnosis or emergency triage decision.'
+  };
+}
+
+function buildFallbackGuidance(prediction) {
+  const normalizedPrediction = String(prediction || 'Unknown');
+  const summaryMap = {
+    Normal: 'The model did not flag a myocardial infarction pattern in this ECG image, but symptoms and clinical history still matter.',
+    'History of MI': 'The model output is more consistent with a previous myocardial infarction pattern than an acute event. Follow-up with a clinician is still important.',
+    'Myocardial Infarction': 'The model flagged a pattern concerning for myocardial infarction. This is not a confirmed diagnosis, but urgent medical evaluation is important, especially if symptoms are present.'
+  };
+
+  return {
+    summary: summaryMap[normalizedPrediction] || 'The model output needs clinician review together with symptoms, vital signs, and a medical history.',
+    preventionSteps: [
+      'Do not rely on this ECG image alone. Arrange prompt review by a qualified clinician.',
+      'Control major risk factors such as smoking, high blood pressure, diabetes, cholesterol, and inactivity.',
+      'Take prescribed heart medications exactly as directed and do not stop them without medical advice.',
+      'Keep a record of chest pain episodes, shortness of breath, dizziness, and activity triggers.',
+      'Seek same-day medical advice if symptoms are new, worsening, or recurring.'
+    ],
+    urgentSigns: [
+      'Crushing or persistent chest pain or pressure',
+      'Shortness of breath at rest or with minimal activity',
+      'Fainting, severe weakness, or confusion',
+      'Pain spreading to the arm, jaw, back, or shoulder',
+      'Blue lips, cold sweats, or rapidly worsening symptoms'
+    ],
+    followUpQuestions: [
+      'Do I need a 12-lead ECG, troponin test, or emergency evaluation?',
+      'Which risk factors should I manage first based on my history?',
+      'What symptoms mean I should call emergency services immediately?',
+      'Do I need follow-up with a cardiologist or additional imaging?',
+      'What lifestyle changes would most reduce my heart risk right now?'
+    ],
+    timeToEventAssessment: 'Cannot be determined from an ECG image alone. A prediction of when a heart attack might happen would be medically unsafe and unreliable.',
+    disclaimer: 'Gemini guidance was unavailable, so this fallback uses general educational heart-care advice. It is not a diagnosis or emergency triage decision.'
+  };
+}
+
+async function generateMiGuidance({ patientId, patientName, prediction, confidence, imageDataUrl }) {
+  if (!GEMINI_API_KEY) {
+    const error = new Error('Gemini API key is not configured on the backend.');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const imagePayload = extractImagePayload(imageDataUrl);
+  if (!imagePayload) {
+    const error = new Error('A valid ECG image is required for AI guidance.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const prompt = [
+    'You are assisting with educational follow-up information for a myocardial infarction screening app.',
+    'Use the supplied ECG image and model output only to provide patient-friendly educational guidance.',
+    'Do not claim a diagnosis, do not estimate when a heart attack will happen, and do not give a probability of imminent death or timing.',
+    'If asked for timing, explicitly say it cannot be determined from an ECG image alone and requires clinician evaluation.',
+    'Keep the tone clear and readable for a patient.',
+    'Return strict JSON with these keys only: summary, preventionSteps, urgentSigns, followUpQuestions, timeToEventAssessment, disclaimer.',
+    'preventionSteps, urgentSigns, and followUpQuestions must be arrays of short strings.',
+    `Patient ID: ${patientId || 'Unknown'}`,
+    `Patient name: ${patientName || 'Unknown'}`,
+    `Model prediction: ${prediction || 'Unknown'}`,
+    `Model confidence: ${typeof confidence === 'number' ? confidence : 'Unknown'}`,
+    'The output must include advice to seek emergency care for symptoms such as crushing chest pain, severe shortness of breath, fainting, blue lips, or new worsening symptoms.'
+  ].join('\n');
+
+  const response = await axios.post(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: imagePayload.mimeType,
+                data: imagePayload.data
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: 'application/json'
+      }
+    },
+    {
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+
+  const text = extractGeminiText(response.data);
+  if (!text) {
+    const error = new Error('Gemini returned an empty response.');
+    error.statusCode = 502;
+    throw error;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    const parseError = new Error('Gemini returned an unreadable response.');
+    parseError.statusCode = 502;
+    throw parseError;
+  }
+
+  return normalizeGuidancePayload(parsed);
+}
 
 // ============================================
 // 1. BRANCH 4 MONGODB SCHEMAS (Defined locally)
@@ -284,6 +442,46 @@ router.get('/results', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+router.post('/mi-guidance', async (req, res) => {
+  try {
+    const { patientId, patientName, prediction, confidence, imageDataUrl } = req.body;
+
+    if (!prediction || confidence === undefined || !imageDataUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'prediction, confidence, and imageDataUrl are required'
+      });
+    }
+
+    const guidance = await generateMiGuidance({
+      patientId,
+      patientName,
+      prediction,
+      confidence: Number(confidence),
+      imageDataUrl
+    });
+
+    res.json({
+      success: true,
+      guidance
+    });
+  } catch (error) {
+    if (error.response?.status === 429 || error.response?.status >= 500) {
+      return res.json({
+        success: true,
+        guidance: buildFallbackGuidance(req.body.prediction),
+        source: 'fallback'
+      });
+    }
+
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message || 'Failed to generate MI guidance'
     });
   }
 });
