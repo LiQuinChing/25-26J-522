@@ -44,6 +44,35 @@ function CADEcgResult() {
     document.title = "QCardio - ECG Analysis Result";
   }, []);
 
+  const p95 = state.p95 * 100 || 0;
+
+  let riskLevel = "Low";
+  let riskColor = "#16A34A";
+
+  if (!state.cad_detected) {
+    riskLevel = "Low";
+    riskColor = "#16A34A";
+  } else {
+    if (p95 < 40) {
+        riskLevel = "Low";
+        riskColor = "#FACC15";
+    } else if (p95 < 80) {
+        riskLevel = "Moderate";
+        riskColor = "#F97316";
+    } else {
+        riskLevel = "High";
+        riskColor = "#DC2626";
+    }
+  }
+
+  const riskStyles = !state.cad_detected
+    ? "bg-green-100 text-green-700"
+    : riskLevel === "Low"
+    ? "bg-yellow-100 text-yellow-700"
+    : riskLevel === "Moderate"
+    ? "bg-orange-100 text-orange-700"
+    : "bg-red-100 text-red-700";
+
   useEffect(() => {
 
     if (state) {
@@ -144,7 +173,7 @@ function CADEcgResult() {
     return path;
   };
 
-  const score = animatedScore;
+//   const score = animatedScore;
 
   const currentDate = new Date().toLocaleString();
 
@@ -311,18 +340,18 @@ function CADEcgResult() {
                     </span>
 
                     <span
+                        className={`px-2 py-1 text-xs rounded font-semibold ${riskStyles}`}
+                        >
+                        {state.cad_detected ? `${riskLevel} Risk` : "Normal"}
+                    </span>
+
+                    {/* <span
                         className={`px-2 py-1 text-xs rounded ${
                             state.cad_detected ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
                         }`}
                     >
-                        {state.cad_detected ? "High Risk" : "Low Risk"}
-                    </span>
-
-                    {/* {state.cad_detected && (
-                        <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-700">
-                        High Risk
-                        </span>
-                    )} */}
+                        {state.cad_detected ? `${riskLevel} Risk` : "Normal"}
+                    </span> */}
 
                     </div>
 
@@ -385,11 +414,13 @@ function CADEcgResult() {
                         cx="100"
                         cy="100"
                         r="85"
-                        stroke={state.cad_detected ? "#DC2626" : "#16A34A"}
+                        // stroke={state.cad_detected ? "#DC2626" : "#16A34A"}
+                        stroke={riskColor}
                         strokeWidth="10"
                         fill="none"
                         strokeDasharray={534}
-                        strokeDashoffset={534 - (score / 100) * 534}
+                        // strokeDashoffset={534 - (score / 100) * 534}
+                        strokeDashoffset={0}
                         strokeLinecap="round"
                         transform="rotate(-90 100 100)"
                         style={{ transition: "stroke-dashoffset 1s ease" }}
@@ -401,7 +432,7 @@ function CADEcgResult() {
 
                         {/* CAD DETECTION TEXT */}
 
-                        <p
+                        {/* <p
                             className={`text-[28px] font-bold mt-6 ${
                                 state.cad_detected ? "text-red-600" : "text-green-600"
                             }`}
@@ -416,16 +447,29 @@ function CADEcgResult() {
                             </>
                         )}
 
+                        </p> */}
+
+                        <p
+                            className="text-[28px] font-bold mt-6 mb-3"
+                            style={{ color: state.cad_detected ? riskColor : "#16A34A" }}
+                            >
+                            {state.cad_detected
+                                ? "CAD (Ischemia) Detected"
+                                : (
+                                <>
+                                No <br />
+                                CAD (Ischemia) Detected
+                                </>
+                            )}
                         </p>
 
                         {/* Status */}
 
                         <span
-                            className={`text-sm uppercase tracking-widest mt-1 gap-2 ${
-                                state.cad_detected ? "text-red-600" : "text-green-600"
-                            }`}
+                            className="text-sm uppercase tracking-widest mt-1 gap-2" style={{ color: riskColor }}
                         >
-                            {state.cad_detected ? "Abnormal" : "Normal"}
+                            {/* {state.cad_detected ? "Abnormal" : "Normal"} */}
+                            {state.cad_detected ? `${riskLevel} Risk` : "Normal"}
                         </span>
 
                     </div>
@@ -460,13 +504,20 @@ function CADEcgResult() {
                     </h2>
 
                     <span className="text-xs font-semibold text-teal-700 bg-teal-100 px-3 py-1 rounded-lg">
-                        Confidence Score: 
+                        {/* Confidence Score: 
                             <span
                             className={`${
                                 state.cad_detected ? "text-red-600" : "text-green-600"
                             }`}
                         >
                             {state.cad_detected ? " High" : " Low"}
+                        </span> */}
+                        Confidence Score:
+                        <span
+                            style={{ color: riskColor }}
+                            className="font-bold"
+                            >
+                            {state.cad_detected ? ` ${riskLevel} Risk` : " Normal"}
                         </span>
                     </span>
 

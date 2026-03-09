@@ -59,7 +59,7 @@ function UploadCADecg() {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "Digitalized_ECG.zip";
+    a.download = "ECG_For_Analysis.zip";
     document.body.appendChild(a);
     a.click();
     a.remove();

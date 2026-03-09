@@ -127,7 +127,8 @@ function Login() {
 
             <div className="flex items-center gap-3 mb-8">
               <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-teal-400 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="material-icons text-white">monitor_heart</span>
+                {/* <span className="material-icons text-white">monitor_heart</span> */}
+                <img src="/logo.png" alt="QCardio Logo" className="w-7 h-6" />
               </div>
               <span className="text-2xl font-bold text-teal-900">
                 QCardio
