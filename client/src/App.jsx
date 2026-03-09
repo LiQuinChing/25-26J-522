@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import UploadECG from './pages/UploadECG'; 
 import ResultDisplay from './pages/ResultDisplay';
 //thisal
+import Dashboard from './pages/Dashboard';
 import UploadCADecg from './pages/UploadCADecg';
 import ECGResult from "./pages/CADEcgResult"; 
 //ayesh
@@ -51,7 +52,7 @@ const DashboardLayout = ({ children }) => {
                     </main>
             
                 {/* Footer */}
-                <footer className="max-w-7xl mx-auto px-8 py-6 mt-12 flex justify-between items-center text-xs font-bold text-gray-400 border-t border-cyan-100">
+                <footer className="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center text-xs font-bold text-gray-400 border-t border-cyan-100">
                     <p>&copy; 2026 CardioAI Platform. All rights reserved.</p>
                     <div className="flex gap-6">
                         <span className="flex items-center gap-1 text-teal-600"><i className="fas fa-lock"></i> HIPAA Compliant</span>
@@ -81,6 +82,16 @@ function App() {
             <Route path="/reset-password/:token" element={<ResetPassword />} />
 
             {/* Protected Routes (Wrapped in DashboardLayout) */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
             {/*vihara*/}
              <Route
               path="/result-display"
