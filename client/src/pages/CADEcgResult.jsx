@@ -21,6 +21,7 @@ function CADEcgResult() {
   const [animatedP95, setAnimatedP95] = useState(0);
   const [animatedBurden, setAnimatedBurden] = useState(0);
   const [animatedSegments, setAnimatedSegments] = useState(0);
+  const [circleProgress, setCircleProgress] = useState(534);
 
   const heartRateStatus =
     heartRate > 100 ? "Tachycardia" :
@@ -138,6 +139,14 @@ function CADEcgResult() {
       </div>
     );
   }
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+        setCircleProgress(0);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   const zoomIn = () => {
     setZoom((prev) => Math.min(prev + 0.2, 3)); // max zoom 3x
@@ -420,10 +429,10 @@ function CADEcgResult() {
                         fill="none"
                         strokeDasharray={534}
                         // strokeDashoffset={534 - (score / 100) * 534}
-                        strokeDashoffset={0}
+                        strokeDashoffset={circleProgress}
                         strokeLinecap="round"
                         transform="rotate(-90 100 100)"
-                        style={{ transition: "stroke-dashoffset 1s ease" }}
+                        style={{ transition: "stroke-dashoffset 2s ease"}}
                         />
 
                     </svg>
