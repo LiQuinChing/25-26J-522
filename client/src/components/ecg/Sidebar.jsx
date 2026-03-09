@@ -18,15 +18,15 @@ function Sidebar() {
             <span className="material-symbols-outlined">cardiology</span>
             <p className="text-sm font-bold">ECG Basics</p>
           </a>
-          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/">
+          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/upload-ecg">
             <span className="material-symbols-outlined">show_chart</span>
             <p className="text-sm font-medium">Arrhythmias</p>
           </a>
-          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/">
+          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/myocardial-infarction">
             <span className="material-symbols-outlined">warning</span>
             <p className="text-sm font-medium">Myocardial Infarction</p>
           </a>
-          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/">
+          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="#">
             <span className="material-symbols-outlined">settings_input_component</span>
             <p className="text-sm font-medium">Lead Placement</p>
           </a>
@@ -34,11 +34,11 @@ function Sidebar() {
 
         <div className="mt-4 flex flex-col gap-1">
           <h3 className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-slate-500">Resources</h3>
-          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/">
+          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="#">
             <span className="material-symbols-outlined">video_library</span>
             <p className="text-sm font-medium">Video Tutorials</p>
           </a>
-          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="/">
+          <a className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-700 transition-all hover:bg-white/50 hover:text-slate-900" href="#">
             <span className="material-symbols-outlined">quiz</span>
             <p className="text-sm font-medium">Practice Quizzes</p>
           </a>

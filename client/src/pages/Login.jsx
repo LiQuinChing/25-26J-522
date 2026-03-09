@@ -20,7 +20,7 @@ function Login() {
   useEffect(() => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
-      navigate("/upload-cad-ecg");
+      navigate("/dashboard");
     }
   }, [navigate]);
 
@@ -50,7 +50,7 @@ function Login() {
 
       toast.success("You have logged in successfully!");
 
-      navigate("/upload-cad-ecg", { replace: true });
+      navigate("/dashboard", { replace: true });
 
     } catch (err) {
       toast.error(err.response?.data?.detail || "Login failed");
@@ -72,7 +72,7 @@ function Login() {
 
       toast.success("Google login successful!");
 
-      navigate("/upload-cad-ecg", { replace: true });
+      navigate("/dashboard", { replace: true });
 
     } catch (err) {
       toast.error("Google authentication failed");

@@ -86,7 +86,7 @@ function MainContent() {
         <div>
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-xl font-bold text-slate-800">Browse by Category</h3>
-            <a className="text-sm font-semibold text-primary-dark hover:text-primary hover:underline" href="/">
+            <a className="text-sm font-semibold text-primary-dark hover:text-primary hover:underline" href="#">
               View All
             </a>
           </div>
@@ -98,7 +98,7 @@ function MainContent() {
               </div>
               <h4 className="mb-2 text-lg font-bold text-slate-800">ECG Interpretation</h4>
               <p className="mb-4 text-sm text-slate-500">Systematic approaches to reading ECG strips, calculating rate, and determining axis.</p>
-              <a className="flex items-center gap-1 text-sm font-bold text-primary-dark transition-all hover:gap-2" href="/">
+              <a className="flex items-center gap-1 text-sm font-bold text-primary-dark transition-all hover:gap-2" href="#">
                 Start Learning <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </a>
             </div>
@@ -109,7 +109,7 @@ function MainContent() {
               </div>
               <h4 className="mb-2 text-lg font-bold text-slate-800">Cardiac Pathology</h4>
               <p className="mb-4 text-sm text-slate-500">Detailed guides on ischemia, infarction, hypertrophy, and electrolyte imbalances.</p>
-              <a className="flex items-center gap-1 text-sm font-bold text-blue-600 transition-all hover:gap-2" href="/">
+              <a className="flex items-center gap-1 text-sm font-bold text-blue-600 transition-all hover:gap-2" href="#">
                 Explore Topics <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </a>
             </div>
@@ -120,7 +120,7 @@ function MainContent() {
               </div>
               <h4 className="mb-2 text-lg font-bold text-slate-800">Clinical Management</h4>
               <p className="mb-4 text-sm text-slate-500">Treatment protocols and immediate actions for critical ECG findings.</p>
-              <a className="flex items-center gap-1 text-sm font-bold text-indigo-600 transition-all hover:gap-2" href="/">
+              <a className="flex items-center gap-1 text-sm font-bold text-indigo-600 transition-all hover:gap-2" href="#">
                 View Protocols <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </a>
             </div>

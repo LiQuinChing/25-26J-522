@@ -171,7 +171,7 @@ export default function UploadECG({ onResult }) {
                 
                 {/* Main Upload Area */}
                 <div className="flex-1 space-y-4">
-                    <h1 className="text-3xl font-bold text-teal-900 mb-2">Upload Patient ECG <i className="fas fa-file-medical ml-2"></i></h1>
+                    <h1 className="text-3xl font-extrabold text-teal-900 mb-2">Upload Patient ECG <i className="fas fa-file-medical ml-2"></i></h1>
                     <p className="text-teal-700 mb-6">Enter the patient details and drop the digitized CSV file to begin AI analysis.</p>
                     
                     {/* Patient Name Input */}

@@ -35,7 +35,7 @@ export default function Navbar() {
             
             {/* Center Navigation */}
             <div className="hidden md:flex items-center gap-8">
-                <Link to="/" className={navItem("/")}>Dashboard</Link>
+                <Link to="/dashboard" className={navItem("/dashboard")}>Dashboard</Link>
                 <Link to="/knowledge-base" className={navItem("/knowledge-base")}>Knowledge Base</Link>
                 <Link to="/faq" className={navItem("/faq")}>F&Q</Link>
             </div>
