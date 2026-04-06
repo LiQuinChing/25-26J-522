@@ -1,12 +1,13 @@
 """
-FastAPI application for ECG Arrhythmia Classification
+FastAPI application for ECG Arrhythmia Classification (Binary CNN-LSTM)
 """
 
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from models import ECGSignal, PredictionResponse, HealthResponse
-from inference import load_model, predict_ecg, is_model_loaded, scaler
+# Note: 'scaler' has been removed from this import!
+from inference import load_model, predict_ecg, is_model_loaded
 import logging
 import pandas as pd
 import numpy as np
@@ -22,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="ECG Arrhythmia Classifier",
-    description="API for heart rhythm disorder classification from ECG signals (with normalization)",
-    version="1.0.0",
+    description="API for binary heart rhythm classification from ECG signals (NSR vs Arrhythmia)",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -40,14 +41,14 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    """Load model and scaler when app starts"""
+    """Load model when app starts"""
     logger.info("🚀 Starting up ECG Classifier API...")
-    logger.info("Loading model and scaler...")
+    logger.info("Loading Keras model...") # <-- Updated text here
     success = load_model()
     if success:
-        logger.info("✅ API ready for predictions (with normalization)")
+        logger.info("✅ API ready for predictions")
     else:
-        logger.error("❌ Failed to load model/scaler - check paths")
+        logger.error("❌ Failed to load model - check paths")
 
 # ================== HEALTH CHECK ==================
 
@@ -64,10 +65,10 @@ async def root():
     """API information and status"""
     return {
         "message": "ECG Arrhythmia Classifier API",
-        "version": "1.1.0",
-        "docs": "http://localhost:8001/docs",
+        "version": "2.0.0",
+        "docs": "http://localhost:8000/docs",
         "model_loaded": is_model_loaded(),
-        "note": "All signals are normalized using StandardScaler before prediction"
+        "note": "Signals are mathematically normalized before prediction."
     }
 
 # ================== SINGLE PREDICTION ==================
@@ -76,8 +77,7 @@ async def root():
 async def predict(ecg_data: ECGSignal):
     """
     Classify single ECG signal
-    - Signal will be automatically padded/truncated to 187 samples
-    - Signal will be normalized using the trained scaler
+    - Signal will be automatically padded/truncated to 500 samples in inference.py
     """
     try:
         if not is_model_loaded():
@@ -107,72 +107,11 @@ async def predict(ecg_data: ECGSignal):
 
 # ================== FILE UPLOAD - CSV ==================
 
-# @app.post("/upload-csv", tags=["File Upload"])
-# async def upload_csv_file(file: UploadFile = File(...)):
-#     """
-#     Upload and classify ECG signal from CSV file
-#     - Reads first row as signal data
-#     - Automatically normalizes the signal
-#     - Returns prediction with both raw and normalized signals
-#     """
-#     try:
-#         if not is_model_loaded():
-#             raise HTTPException(status_code=503, detail="Model not loaded")
-
-#         contents = await file.read()
-#         try:
-#             df = pd.read_csv(io.BytesIO(contents), header=None)
-#         except Exception as e:
-#             raise HTTPException(status_code=400, detail=f"Invalid CSV format: {e}")
-
-#         if df.shape[0] == 0:
-#             raise HTTPException(status_code=400, detail="CSV file is empty")
-
-#         signal_values = df.iloc[0].values.astype(np.float32)
-#         signal_values = signal_values[~np.isnan(signal_values)]
-
-#         if len(signal_values) == 0:
-#             raise HTTPException(status_code=400, detail="No valid signal data found in the first row")
-
-#         logger.info(f"📥 CSV Upload - Raw signal length: {len(signal_values)}")
-
-#         signal_for_plot = signal_values.copy()
-#         trailing_zeros = 0
-#         for i in range(len(signal_for_plot) - 1, -1, -1):
-#             if signal_for_plot[i] == 0:
-#                 trailing_zeros += 1
-#             else:
-#                 break
-#         if trailing_zeros > 50:
-#             signal_for_plot = signal_for_plot[:-trailing_zeros]
-
-#         result = predict_ecg(signal_values.tolist())
-
-#         if "error" in result:
-#             raise HTTPException(status_code=500, detail=result["error"])
-
-#         result['signal_raw'] = signal_for_plot.tolist()
-#         normalized_signal = scaler.transform(signal_values.reshape(1, -1))[0]
-#         result['signal_normalized'] = normalized_signal.tolist()
-
-#         logger.info(f"✅ Prediction: {result['predicted_class']} ({result['confidence']:.2%})")
-#         return result
-
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         logger.error(f"❌ Error processing CSV: {e}")
-#         import traceback
-#         traceback.print_exc()
-#         raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
-
-# Replace your current /upload-csv route with this:
-
 @app.post("/upload-csv", tags=["File Upload"])
 async def upload_csv_file(file: UploadFile = File(...)):
     """
     Upload and classify ECG signal from CSV file
-    - Smartly detects both Kaggle (1 row, 187 cols) and PhysioNet raw formats (multi-col, headers)
+    - Drops NaN values and processes full extracted signal
     """
     try:
         if not is_model_loaded():
@@ -181,39 +120,38 @@ async def upload_csv_file(file: UploadFile = File(...)):
         contents = await file.read()
         
         try:
-            # 1. First, try reading it assuming it has text headers (like 100.csv)
+            # 1. Try reading assuming text headers
             df = pd.read_csv(io.BytesIO(contents))
             
-            # Check if it looks like a raw multi-column recording
-            if any(col in df.columns for col in ['MLII', 'II', 'V5', 'time_ms', 'Unnamed: 0']):
-                logger.info("Detected multi-column raw format (e.g. 100.csv)")
+            # Check for multi-column raw format
+            if any(col in df.columns for col in ['MLII', 'II', 'V5', 'time_ms', 'Unnamed: 0', 'I']):
+                logger.info("Detected multi-column raw format")
                 
-                # Find the best column to use for the signal
                 target_col = next((col for col in ['MLII', 'II', 'V1', 'V5', 'I'] if col in df.columns), None)
                 if not target_col:
                     ignore_cols = ['time_ms', 'time', 'Unnamed: 0']
                     target_col = next(col for col in df.columns if col not in ignore_cols)
                 
-                # Extract up to 187 data points (one heartbeat slice for the model)
-                signal_values = df[target_col].dropna().values.astype(np.float32)[:187]
+                # Extract all data and drop NaNs (Do not slice to 187 anymore)
+                signal_values = df[target_col].dropna().values.astype(np.float32)
             else:
-                # 2. It's the Kaggle single-row format (like sample_100_Supraventricular.csv)
-                logger.info("Detected single-row pre-segmented format")
+                # 2. Kaggle single-row format fallback
+                logger.info("Detected single-row format")
                 df = pd.read_csv(io.BytesIO(contents), header=None)
                 signal_values = df.iloc[0].values.astype(np.float32)
 
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid CSV format: {e}")
 
-        # Remove NaNs
+        # Remove remaining NaNs just in case
         signal_values = signal_values[~np.isnan(signal_values)]
 
         if len(signal_values) == 0:
             raise HTTPException(status_code=400, detail="No valid signal data found")
 
-        logger.info(f"📥 CSV Upload - Signal length extracted: {len(signal_values)}")
+        print(f"-----------> DEBUG: CSV Upload - Valid signal length extracted: {len(signal_values)}")
 
-        # Clean trailing zeros for the plot 
+        # Clean trailing zeros for the frontend plot 
         signal_for_plot = signal_values.copy()
         trailing_zeros = 0
         for i in range(len(signal_for_plot) - 1, -1, -1):
@@ -231,7 +169,11 @@ async def upload_csv_file(file: UploadFile = File(...)):
             raise HTTPException(status_code=500, detail=result["error"])
 
         result['signal_raw'] = signal_for_plot.tolist()
-        normalized_signal = scaler.transform(signal_values.reshape(1, -1))[0]
+        
+        # Perform mathematical normalization locally for frontend visual plotting
+        sig_min = signal_values.min()
+        sig_max = signal_values.max()
+        normalized_signal = (signal_values - sig_min) / (sig_max - sig_min + 1e-8)
         result['signal_normalized'] = normalized_signal.tolist()
 
         logger.info(f"✅ Prediction: {result['predicted_class']} ({result['confidence']:.2%})")
@@ -245,15 +187,13 @@ async def upload_csv_file(file: UploadFile = File(...)):
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
 
-        
 # ================== TEST DATA SAMPLES ==================
 
 @app.get("/test-samples", tags=["Test Data"])
 async def get_test_samples(count: int = 5):
     """
-    Get random samples from MIT-BIH test dataset with predictions
-    - Returns both raw and normalized signals for frontend display
-    - Includes true labels and prediction accuracy
+    Get random samples from test dataset
+    - Adjusted for Binary Classification
     """
     try:
         if not is_model_loaded():
@@ -263,7 +203,7 @@ async def get_test_samples(count: int = 5):
         y_test_path = DATA_PATH / 'y_test.npy'
 
         if not X_test_path.exists() or not y_test_path.exists():
-            raise FileNotFoundError("Test data files not found in ../data/")
+            raise FileNotFoundError("Test data files not found in ./data/")
 
         X_test = np.load(X_test_path)
         y_test = np.load(y_test_path)
@@ -272,26 +212,27 @@ async def get_test_samples(count: int = 5):
         indices = random.sample(range(len(X_test)), max_count)
 
         samples = []
-        class_map = {
-            0: 'Normal', 1: 'Supraventricular', 2: 'Ventricular',
-            3: 'Fusion', 4: 'Unknown'
-        }
-
+        
         for idx in indices:
             signal_raw = X_test[idx].flatten()
-            label = int(y_test[idx])
+            label_val = int(y_test[idx])
+            
+            # Map old 5-class labels to binary (0 is NSR, anything else is Arrhythmia)
+            true_label = 'NSR' if label_val == 0 else 'Arrhythmia'
 
             result = predict_ecg(signal_raw.tolist())
-
             result['signal_raw'] = signal_raw.tolist()
 
-            signal_normalized = scaler.transform(signal_raw.reshape(1, -1))[0]
+            # Normalize for plot
+            sig_min = signal_raw.min()
+            sig_max = signal_raw.max()
+            signal_normalized = (signal_raw - sig_min) / (sig_max - sig_min + 1e-8)
             result['signal_normalized'] = signal_normalized.tolist()
 
-            result['true_label'] = class_map.get(label, 'Unknown')
-            result['true_label_id'] = label
+            result['true_label'] = true_label
+            result['true_label_id'] = 0 if label_val == 0 else 1
             result['index'] = int(idx)
-            result['is_correct'] = result['predicted_class'] == result['true_label']
+            result['is_correct'] = result['predicted_class'] == true_label
 
             samples.append(result)
 
@@ -307,7 +248,6 @@ async def get_test_samples(count: int = 5):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # ================== EXCEPTION HANDLER ==================
 
 @app.exception_handler(Exception)
@@ -320,4 +260,4 @@ async def general_exception_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True, log_level="info")
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

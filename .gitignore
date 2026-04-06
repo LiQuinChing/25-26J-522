@@ -103,3 +103,9 @@ frontend/dist/
 
 # TensorFlow logs
 *.tfevents*
+
+venv/
+.venv/
+env/
+**/venv/
+**/.venv/
