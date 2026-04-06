@@ -243,6 +243,89 @@ try {
 }
 
 // ==========================================
+// 6. MYOCARDIAL INFARCTION ROUTES & MODELS (Branch 4)
+// ==========================================
+const miPatientSchema = new mongoose.Schema({
+  patientId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  email: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  dateOfBirth: { type: Date, default: null },
+  gender: { type: String, default: '' },
+  updatedAt: { type: Date, default: Date.now }
+});
+const MIPatient = mongoose.model('MIPatient', miPatientSchema);
+
+const miResultSchema = new mongoose.Schema({
+  patientId: { type: String, required: true },
+  patientName: { type: String, required: true },
+  prediction: { type: String, required: true },
+  confidence: { type: Number, required: true },
+  date: { type: Date, default: Date.now },
+  time: { type: String, required: true },
+  imageFile: { type: String, default: '' },
+  additionalNotes: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+});
+const MIResult = mongoose.model('MIResult', miResultSchema);
+
+// Check if patient exists
+app.get('/api/patient/:patientId', async (req, res) => {
+  try {
+    const patient = await MIPatient.findOne({ patientId: req.params.patientId });
+    if (patient) res.json({ success: true, exists: true, patient });
+    else res.json({ success: true, exists: false, message: 'Patient not found' });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// Create or update patient
+app.post('/api/patient', async (req, res) => {
+  try {
+    const { patientId, name, email, phone, dateOfBirth, gender } = req.body;
+    let patient = await MIPatient.findOne({ patientId });
+    if (patient) {
+      patient.name = name; patient.updatedAt = Date.now();
+      await patient.save();
+      res.json({ success: true, message: 'Updated', patient });
+    } else {
+      patient = new MIPatient({ patientId, name, email, phone, dateOfBirth, gender });
+      await patient.save();
+      res.status(201).json({ success: true, message: 'Created', patient });
+    }
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// Save MI Prediction Result
+app.post('/api/result', async (req, res) => {
+  try {
+    const { patientId, patientName, prediction, confidence, date, time, imageFile, additionalNotes } = req.body;
+    const result = new MIResult({ 
+        patientId, patientName, prediction, confidence: parseFloat(confidence), 
+        date: date ? new Date(date) : new Date(), time, 
+        imageFile: imageFile || '', additionalNotes: additionalNotes || '' 
+    });
+    await result.save();
+    res.status(201).json({ success: true, message: 'Saved', result });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// Get specific patient history
+app.get('/api/results/:patientId', async (req, res) => {
+  try {
+    const results = await MIResult.find({ patientId: req.params.patientId }).sort({ createdAt: -1 }).lean();
+    res.json({ success: true, count: results.length, results });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// Get all history
+app.get('/api/results', async (req, res) => {
+  try {
+    const results = await MIResult.find().sort({ createdAt: -1 }).limit(50).lean();
+    res.json({ success: true, count: results.length, results });
+  } catch (error) { res.status(500).json({ success: false, error: error.message }); }
+});
+
+// ==========================================
 // 6. GLOBAL ERROR HANDLER (From Branch 4)
 // ==========================================
 app.use((err, req, res, next) => {

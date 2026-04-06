@@ -217,7 +217,7 @@ def get_classes():
     })
 
 if __name__ == '__main__':
-    port = int(os.getenv('FLASK_PORT', '5000'))
+    port = int(os.getenv('FLASK_PORT', '8003'))
     load_predictor()
     print("\n" + "="*70)
     print(" " * 20 + "MI DETECTION API SERVER")
