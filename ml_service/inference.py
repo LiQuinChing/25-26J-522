@@ -1,91 +1,78 @@
-# inference.py
-import torch
 import numpy as np
-import joblib
+import pandas as pd
+import tensorflow as tf
 import os
-from pathlib import Path
 import logging
+from scipy import signal as scipy_signal
 
-# Importujemy jedną, spójną definicję modelu
-from model_definition import ECG_CNN_LSTM_Deep
+# Path Configuration
+MODEL_PATH = os.getenv('MODEL_PATH', './models/arrhythmia_1d_cnn_recordwise_NEW.h5')
 
-# Konfiguracja ścieżek i urządzenia
-MODEL_PATH = os.getenv('MODEL_PATH', './models/best_model.pth')
-SCALER_PATH = os.getenv('SCALER_PATH', './models/scaler.pkl')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# Globalne zmienne
+# Global variables
 model = None
-scaler = None
 logger = logging.getLogger(__name__)
 
 def load_model():
-    """Wczytuje model i scaler z zapisanych plików."""
-    global model, scaler
+    """Loads the .h5 model from saved files."""
+    global model
     try:
-        model = ECG_CNN_LSTM_Deep(num_classes=5, dropout=0.45)
-        state_dict = torch.load(MODEL_PATH, map_location=device)
-        model.load_state_dict(state_dict)
-        model.to(device)
-        model.eval()
-
-        scaler = joblib.load(SCALER_PATH)
-
-        logger.info(f"✓ Model wczytany z {MODEL_PATH}")
-        logger.info(f"✓ Scaler wczytany z {SCALER_PATH}")
+        model = tf.keras.models.load_model(MODEL_PATH)
+        logger.info(f"✓ Model loaded from {MODEL_PATH}")
         return True
     except Exception as e:
-        logger.error(f"✗ Błąd wczytywania modela/scalera: {e}")
+        logger.error(f"✗ Error loading model: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def is_model_loaded():
-    """Sprawdza, czy model i scaler są wczytane."""
-    return model is not None and scaler is not None
+    """Checks if the model is loaded."""
+    return model is not None
 
 def predict_ecg(signal: list[float], uncertainty_threshold: float = 0.6):
     """
-    Klasyfikuje sygnał EKG.
-    Ta funkcja jest sercem logiki predykcji i jest używana przez wszystkie endpointy.
+    Classifies the ECG signal using the Keras 1D CNN-LSTM model.
     """
-    if model is None or scaler is None:
-        logger.error("Próba predykcji przy nie wczytanym modelu.")
+    if model is None:
+        logger.error("Attempted prediction with unloaded model.")
         return {"error": "Model not loaded"}
 
     try:
-        # 1. Konwersja i wyrównanie długości do 187 próbek
-        signal_array = np.array(signal, dtype=np.float32)
-        if len(signal_array) < 187:
-            signal_array = np.pad(signal_array, (0, 187 - len(signal_array)), mode='constant')
-        elif len(signal_array) > 187:
-            signal_array = signal_array[:187]
+        # 1. Clean missing data (NaN handling)
+        signal_series = pd.Series(signal).dropna()
+        clean_signal = signal_series.values.astype(np.float32)
 
-        # 2. Normalizacja
-        signal_array = scaler.transform(signal_array.reshape(1, -1))[0]
+        # 2. Ensure exactly 500 data points (Padding/Truncating to match training)
+        target_length = 500
+        if len(clean_signal) < target_length:
+            padded = np.zeros(target_length)
+            padded[:len(clean_signal)] = clean_signal
+            clean_signal = padded
+        else:
+            # If the user uploads a long CSV, grab the first 500 valid points
+            clean_signal = clean_signal[:target_length]
 
-        # 3. Przygotowanie tensora o poprawnym kształcie (1, 1, 187)
-        signal_tensor = torch.from_numpy(signal_array).float().to(device)
-        signal_tensor = signal_tensor.unsqueeze(0).unsqueeze(1)  # Kształt: (1, 1, 187)
+        # 3. Normalization (Matches the (signal - min) / (max - min) from training)
+        signal_min = clean_signal.min()
+        signal_max = clean_signal.max()
+        clean_signal = (clean_signal - signal_min) / (signal_max - signal_min + 1e-8)
 
-        # 4. Predykcja
-        with torch.no_grad():
-            outputs = model(signal_tensor)
-            probabilities = torch.softmax(outputs, dim=1)[0].cpu().numpy()
+        # 4. Prepare the tensor for 1D CNN: Shape must be (1, 500, 1)
+        signal_tensor = clean_signal.reshape(1, target_length, 1)
 
-        # 5. Formatowanie wyniku
-        class_names = ['Normal', 'Supraventricular', 'Ventricular', 'Fusion', 'Unknown']
+        # 5. Prediction
+        probabilities = model.predict(signal_tensor)[0]
+
+        # 6. Formatting the output
+        class_names = ['NSR', 'Arrhythmia'] 
         predicted_idx = int(np.argmax(probabilities))
         predicted_class = class_names[predicted_idx]
         confidence = float(probabilities[predicted_idx])
         is_uncertain = confidence < uncertainty_threshold
 
         return {
-            "Normal": float(probabilities[0]),
-            "Supraventricular": float(probabilities[1]),
-            "Ventricular": float(probabilities[2]),
-            "Fusion": float(probabilities[3]),
-            "Unknown": float(probabilities[4]),
+            "NSR": float(probabilities[0]),
+            "Arrhythmia": float(probabilities[1]),
             "predicted_class": predicted_class,
             "confidence": confidence,
             "is_uncertain": is_uncertain,
@@ -93,10 +80,10 @@ def predict_ecg(signal: list[float], uncertainty_threshold: float = 0.6):
         }
 
     except Exception as e:
-        logger.error(f"BŁĄD w predict_ecg: {e}")
+        logger.error(f"ERROR in predict_ecg: {e}")
         import traceback
         traceback.print_exc()
         return {"error": str(e)}
 
-# Wczytaj model przy starcie aplikacji
+# Load the model when the script starts
 load_model()

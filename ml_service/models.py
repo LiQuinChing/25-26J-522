@@ -6,13 +6,14 @@ class ECGSignal(BaseModel):
     description: Optional[str] = Field(default="ECG signal")
 
 class PredictionResponse(BaseModel):
-    Normal: float
-    Supraventricular: float
-    Ventricular: float
-    Fusion: float
-    Unknown: float
+    NSR: float
+    Arrhythmia: float
     predicted_class: str
     confidence: float
+    is_uncertain: Optional[bool] = False
+    threshold: Optional[float] = 0.6
+    signal_raw: Optional[List[float]] = None
+    signal_normalized: Optional[List[float]] = None
 
 class HealthResponse(BaseModel):
     status: str
