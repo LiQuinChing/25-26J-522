@@ -7,9 +7,9 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 export default function ResultDisplay({ result, chartData, onBack }) {
     
-    // Data for the simple HTML-based Donut Chart visualization (replaces Recharts Pie)
     const confidencePct = Math.round(result.confidence * 100);
-    const isAbnormal = result.predicted_class !== 'Normal';
+    // The logic stays the same: it looks for the backend 'NSR' label
+    const isAbnormal = result.predicted_class !== 'NSR'; 
     const mainColorClass = isAbnormal ? 'text-red-500' : 'text-teal-500';
     const mainBgClass = isAbnormal ? 'bg-red-500' : 'bg-teal-500';
 
@@ -48,7 +48,8 @@ export default function ResultDisplay({ result, chartData, onBack }) {
                             {isAbnormal ? 'Arrhythmia Detected' : 'Rhythm Normal'}
                         </h3>
                         <p className="text-sm text-gray-500 mt-2 px-4">
-                            AI analysis detects ECG patterns consistent with <strong>{result.predicted_class}</strong> rhythm.
+                            {/* Replaced raw NSR with clean text mapping */}
+                            AI analysis detects ECG patterns consistent with <strong>{result.predicted_class === 'NSR' ? 'Normal Sinus' : result.predicted_class}</strong> rhythm.
                         </p>
                     </div>
 
@@ -56,19 +57,22 @@ export default function ResultDisplay({ result, chartData, onBack }) {
                     <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-cyan-100 p-6">
                         <h3 className="text-lg font-bold text-teal-900 mb-6"><i className="fas fa-chart-bar mr-2 text-teal-500"></i>Diagnostic Findings</h3>
                         <div className="space-y-4">
-                            {['Normal', 'Supraventricular', 'Ventricular', 'Fusion', 'Unknown'].map((cls) => {
+                            {['NSR', 'Arrhythmia'].map((cls) => {
                                 const prob = result[cls] || 0;
                                 const isPrimary = cls === result.predicted_class;
                                 if (prob < 0.01 && !isPrimary) return null; 
                                 
+                                // Create a clean display name just for the UI
+                                const displayName = cls === 'NSR' ? 'Normal Sinus Rhythm' : 'Arrhythmia';
+                                
                                 return (
-                                    <div key={cls} className={`p-4 rounded-lg border ${isPrimary ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                                    <div key={cls} className={`p-4 rounded-lg border ${isPrimary ? (isAbnormal ? 'bg-red-50 border-red-100' : 'bg-teal-50 border-teal-100') : 'bg-gray-50 border-gray-100'}`}>
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className={`font-bold ${isPrimary ? 'text-red-900' : 'text-teal-900'}`}>{cls} Rhythm</span>
-                                            <span className={`font-bold ${isPrimary ? 'text-red-600' : 'text-teal-600'}`}>{(prob * 100).toFixed(1)}%</span>
+                                            <span className={`font-bold ${isPrimary ? (isAbnormal ? 'text-red-900' : 'text-teal-900') : 'text-gray-700'}`}>{displayName}</span>
+                                            <span className={`font-bold ${isPrimary ? (isAbnormal ? 'text-red-600' : 'text-teal-600') : 'text-gray-500'}`}>{(prob * 100).toFixed(1)}%</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div className={`${isPrimary ? 'bg-red-500' : 'bg-teal-400'} h-2 rounded-full`} style={{ width: `${prob * 100}%` }}></div>
+                                            <div className={`${isPrimary ? (isAbnormal ? 'bg-red-500' : 'bg-teal-500') : 'bg-gray-400'} h-2 rounded-full`} style={{ width: `${prob * 100}%` }}></div>
                                         </div>
                                     </div>
                                 );

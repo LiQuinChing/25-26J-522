@@ -43,7 +43,7 @@ app.add_middleware(
 async def startup_event():
     """Load model when app starts"""
     logger.info("🚀 Starting up ECG Classifier API...")
-    logger.info("Loading Keras .h5 model...")
+    logger.info("Loading Keras model...") # <-- Updated text here
     success = load_model()
     if success:
         logger.info("✅ API ready for predictions")
@@ -149,7 +149,7 @@ async def upload_csv_file(file: UploadFile = File(...)):
         if len(signal_values) == 0:
             raise HTTPException(status_code=400, detail="No valid signal data found")
 
-        logger.info(f"📥 CSV Upload - Valid signal length extracted: {len(signal_values)}")
+        print(f"-----------> DEBUG: CSV Upload - Valid signal length extracted: {len(signal_values)}")
 
         # Clean trailing zeros for the frontend plot 
         signal_for_plot = signal_values.copy()
