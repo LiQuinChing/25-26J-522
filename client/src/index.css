@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  /* Teal Palette */
+  --color-teal-500: #14b8a6;
+  --color-teal-600: #0d9488;
+  --color-teal-700: #0f766e;
+  --color-teal-900: #134e4a;
+
+  /* Cyan Palette */
+  --color-cyan-50: #ecfeff;
+  --color-cyan-100: #cffafe;
+  --color-cyan-500: #06b6d4;
+  --color-cyan-900: #164e63;
+}
