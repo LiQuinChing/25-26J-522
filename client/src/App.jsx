@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 //vihara
 import UploadECG from './pages/UploadECG'; 
 import ResultDisplay from './pages/ResultDisplay';
+import ImageToCSV from './pages/ImageToCSV';
 //thisal
 import Dashboard from './pages/Dashboard';
 import UploadCADecg from './pages/UploadCADecg';
@@ -113,7 +114,17 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/*vihara*/}
+            <Route 
+              path="/img-csv" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <ImageToCSV />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/*thisal*/}
             <Route
               path="/upload-cad-ecg"
               element={

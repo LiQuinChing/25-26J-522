@@ -44,6 +44,11 @@ export default function MainSidebar() {
                         <i className="fas fa-bolt text-xl w-6 text-center"></i>
                         <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Myocardial Infarction</span>
                     </NavLink>
+
+                    <NavLink to="/img-csv" className={navLinkClasses}>
+                        <i className="fas fa-file-csv text-xl w-6 text-center"></i>
+                        <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Image to CSV</span>
+                    </NavLink>
                 </nav>
             </div>
         </aside>
