@@ -47,8 +47,7 @@ app = FastAPI(title="ECG CAD Detection API")
 # Allow CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    #allow_origins=["*"],  # change this to your frontend URL in production
+    allow_origins=["*"],  
     allow_methods=["*"],
     allow_headers=["*"],
 )

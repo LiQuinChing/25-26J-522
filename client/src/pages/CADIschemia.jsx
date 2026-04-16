@@ -41,7 +41,7 @@ function CADIschemia() {
     try {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8000/analyze_ecg/", {
+      const res = await fetch("/cad/analyze_ecg/", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`

@@ -10,6 +10,8 @@ services:
     build:
       context: ./server
     restart: always
+    env_file:
+      - ./server/.env
     environment:
       - NODE_ENV=production
       # Add database URIs or other env vars here
@@ -18,6 +20,8 @@ services:
     build:
       context: ./CAD_models
     restart: always
+    env_file:
+      - ./CAD_models/.env
 
   arr_models:
     build:

@@ -53,7 +53,7 @@ function ResetPassword() {
 
     try {
 
-      await axios.post("http://localhost:8000/reset-password", {
+      await axios.post("/cad/reset-password", {
         token: token,
         password: password
       });

@@ -27,7 +27,7 @@ const token =
 localStorage.getItem("token") ||
 sessionStorage.getItem("token");
 
-const res = await fetch("http://localhost:8000/recent-analysis",{
+const res = await fetch("/cad/recent-analysis",{
 headers:{
 Authorization:`Bearer ${token}`
 }

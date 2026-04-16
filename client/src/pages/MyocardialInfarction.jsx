@@ -4,8 +4,8 @@ import axios from 'axios';
 import ResultsService from '../ResultsService';
 
 // Converted process.env to import.meta.env for Vite compatibility
-const ML_API_URL = import.meta.env.VITE_ML_API_URL || 'http://localhost:8003'; 
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:5000';
+const ML_API_URL = import.meta.env.VITE_ML_API_URL || '/mi'; 
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 export default function MyocardialInfarction() {
   const [patientId, setPatientId] = useState('');

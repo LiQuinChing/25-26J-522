@@ -51,7 +51,7 @@ function Signup() {
     e.preventDefault();
 
     try {
-      await axios.post("http://localhost:8000/signup", form);
+      await axios.post("/cad/signup", form);
 
       toast.success("Account created successfully!");
 
@@ -63,7 +63,7 @@ function Signup() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const res = await axios.post("http://localhost:8000/google-signup", {
+      const res = await axios.post("/cad/google-signup", {
         token: credentialResponse.credential,
       });
 

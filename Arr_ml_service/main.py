@@ -66,7 +66,7 @@ async def root():
     return {
         "message": "ECG Arrhythmia Classifier API",
         "version": "2.0.0",
-        "docs": "http://localhost:8000/docs",
+        "docs": "http://localhost:8001/docs",
         "model_loaded": is_model_loaded(),
         "note": "Signals are mathematically normalized before prediction."
     }

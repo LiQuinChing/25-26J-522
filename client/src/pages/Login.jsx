@@ -34,7 +34,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8000/login", form);
+      const res = await axios.post("/cad/login", form);
 
       const token = res.data.access_token;
       const users = res.data.users;
@@ -63,7 +63,7 @@ function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8000/google-signup", {
+      const res = await axios.post("/cad/google-signup", {
         token: credentialResponse.credential
       });
 

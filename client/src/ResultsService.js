@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Swapped process.env for import.meta.env
 // 2. Updated the fallback port from 3001 to your unified server port 5000
-const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:5000';
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL || '';
 
 const api = axios.create({
   baseURL: `${BACKEND_API_URL}/api`,

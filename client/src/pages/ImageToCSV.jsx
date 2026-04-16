@@ -11,7 +11,7 @@ export default function ImageToCSV() {
       {/* The iframe points directly to your locally running Streamlit app */}
       <div className="flex-1 w-full bg-gray-50">
         <iframe 
-          src="http://localhost:8501" 
+          src="/digitizer/" 
           title="Streamlit ECG Digitizer"
           className="w-full h-full border-0"
         />

@@ -23,7 +23,7 @@ function UploadCADecg() {
         localStorage.getItem("token") ||
         sessionStorage.getItem("token");
 
-        const res = await fetch("http://localhost:8000/recent-analysis", {
+        const res = await fetch("/cad/recent-analysis", {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -48,7 +48,7 @@ function UploadCADecg() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("http://localhost:8000/convert-ecg-image", {
+    const res = await fetch("/cad/convert-ecg-image", {
         method: "POST",
         body: formData
     });
@@ -84,7 +84,7 @@ function UploadCADecg() {
 
     const xhr = new XMLHttpRequest();
 
-    xhr.open("POST", "http://localhost:8000/analyze_ecg/");
+    xhr.open("POST", "/cad/analyze_ecg/");
     xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
     xhr.upload.onprogress = (event) => {

@@ -7,10 +7,10 @@ import PatientHistory from '../components/PatientHistory';
 
 // In Vite, we use import.meta.env instead of process.env
 // We also default the ML backend to your port 8000 if no env variable is set
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/svt').replace(/\/$/, '');
 const PREDICT_URL = `${API_BASE_URL}/predict`;
 // Pointing to your newly merged dev-main1 server on port 5000!
-const PATIENT_API_URL = (import.meta.env.VITE_PATIENT_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+const PATIENT_API_URL = (import.meta.env.VITE_PATIENT_API_URL || '/api').replace(/\/$/, '');
 
 export default function SvtAnalysis() {
   const [loading, setLoading] = useState(false);

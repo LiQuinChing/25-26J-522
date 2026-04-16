@@ -16,7 +16,7 @@ function ForgotPassword() {
 
     try {
 
-      await axios.post("http://localhost:8000/forgot-password", { email });
+      await axios.post("/cad/forgot-password", { email });
 
       toast.success("Password reset link sent to your email");
 
