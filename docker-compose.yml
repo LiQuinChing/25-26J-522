@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./client
+    restart: always
+
+  node_server:
+    build:
+      context: ./server
+    restart: always
+    environment:
+      - NODE_ENV=production
+      # Add database URIs or other env vars here
+
+  cad_models:
+    build:
+      context: ./CAD_models
+    restart: always
+
+  arr_models:
+    build:
+      context: ./Arr_ml_service
+    restart: always
+
+  svt_app:
+    build:
+      context: .
+      dockerfile: Dockerfile.root
+    command: python app.py
+    restart: always
+
+  svt_api:
+    build:
+      context: .
+      dockerfile: Dockerfile.root
+    command: python api_svt_predict.py
+    restart: always
+
+  ecg_digitizer:
+    build:
+      context: ./Open-ECG-Digitizer-main
+    restart: always
+
+  nginx_proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - node_server
+      - cad_models
+      - arr_models
+      - ecg_digitizer
+    restart: always
