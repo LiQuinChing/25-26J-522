@@ -9,11 +9,14 @@ import PatientHistory from '../components/PatientHistory';
 // We also default the ML backend to your port 8000 if no env variable is set
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/svt').replace(/\/$/, '');
 const PREDICT_URL = `${API_BASE_URL}/predict`;
+const PREDICT_CSV_URL = `${API_BASE_URL}/predict/csv`;
+const CONVERT_IMAGE_URL = `${API_BASE_URL}/convert-image`;
+const PREDICT_IMAGE_URL = `${API_BASE_URL}/predict/image`;
 // Pointing to your newly merged dev-main1 server on port 5000!
 const PATIENT_API_URL = (import.meta.env.VITE_PATIENT_API_URL || '/api').replace(/\/$/, '');
 
 export default function SvtAnalysis() {
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -36,6 +39,8 @@ export default function SvtAnalysis() {
     );
   };
 
+  const loading = loadingAction !== null;
+
   const savePatientRecord = async (predictionData, ecgInput) => {
     const payload = {
       patient: {
@@ -56,27 +61,25 @@ export default function SvtAnalysis() {
     return response.data;
   };
 
-  const handlePredict = async (formData) => {
+  const runPrediction = async ({ requestFn, loadingKey, saveInput }) => {
     if (!isPatientDetailsValid()) {
       setError('Please enter Patient ID, Full Name, Age, and Gender before running prediction.');
       return;
     }
 
-    setLoading(true);
+    setLoadingAction(loadingKey);
     setError(null);
     setResult(null);
     setSaveMessage(null);
 
     try {
-      const response = await axios.post(PREDICT_URL, formData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await requestFn();
 
       if (response.data.status === 'success') {
         setResult(response.data);
 
         try {
-          const saveResponse = await savePatientRecord(response.data, formData);
+          const saveResponse = await savePatientRecord(response.data, saveInput || response.data.input);
           setSaveMessage(`Patient record saved. Novelty Score: ${saveResponse.novelty.score} (${saveResponse.novelty.label})`);
           setHistoryRefreshKey((prev) => prev + 1);
         } catch (saveError) {
@@ -87,10 +90,93 @@ export default function SvtAnalysis() {
       }
     } catch (err) {
       if (err.response) setError(err.response.data.message || 'Server error occurred');
-      else if (err.request) setError(`Cannot connect to API server at ${PREDICT_URL}. Make sure the Flask server is running.`);
+      else if (err.request) setError(`Cannot connect to SVT API server at ${API_BASE_URL}. Make sure the Flask server is running.`);
       else setError('Error: ' + err.message);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
+    }
+  };
+
+  const handlePredict = async (formData) => {
+    await runPrediction({
+      loadingKey: 'manual',
+      saveInput: formData,
+      requestFn: () => axios.post(PREDICT_URL, formData, {
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    });
+  };
+
+  const handleCsvPredict = async ({ csvFile, sampleRateHz }) => {
+    const upload = new FormData();
+    upload.append('csv', csvFile);
+    if (sampleRateHz) upload.append('sample_rate_hz', sampleRateHz);
+
+    await runPrediction({
+      loadingKey: 'csv',
+      requestFn: () => axios.post(PREDICT_CSV_URL, upload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    });
+  };
+
+  const handleImagePredict = async ({ imageFile, layout, sampleRateHz }) => {
+    const upload = new FormData();
+    upload.append('image', imageFile);
+    upload.append('layout', layout);
+    if (sampleRateHz) upload.append('sample_rate_hz', sampleRateHz);
+
+    await runPrediction({
+      loadingKey: 'image',
+      requestFn: () => axios.post(PREDICT_IMAGE_URL, upload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    });
+  };
+
+  const handleImageConvert = async ({ imageFile, layout, sampleRateHz }) => {
+    setLoadingAction('convert');
+    setError(null);
+    setSaveMessage(null);
+
+    try {
+      const upload = new FormData();
+      upload.append('image', imageFile);
+      upload.append('layout', layout);
+      if (sampleRateHz) upload.append('sample_rate_hz', sampleRateHz);
+
+      const response = await axios.post(CONVERT_IMAGE_URL, upload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        responseType: 'blob',
+      });
+
+      const contentDisposition = response.headers['content-disposition'] || '';
+      const match = contentDisposition.match(/filename="?([^"]+)"?/i);
+      const fileName = match?.[1] || imageFile.name.replace(/\.[^.]+$/, '') + '_timeseries.csv';
+      const convertedFile = new File([response.data], fileName, { type: 'text/csv' });
+      return {
+        file: convertedFile,
+        message: response.headers['x-conversion-message'] || 'Image converted to CSV.',
+      };
+    } catch (err) {
+      if (err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        try {
+          const parsed = JSON.parse(text);
+          setError(parsed.message || 'Image conversion failed');
+        } catch {
+          setError(text || 'Image conversion failed');
+        }
+      } else if (err.response) {
+        setError(err.response.data.message || 'Image conversion failed');
+      } else if (err.request) {
+        setError(`Cannot connect to SVT API server at ${API_BASE_URL}.`);
+      } else {
+        setError('Error: ' + err.message);
+      }
+      return null;
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -104,7 +190,7 @@ export default function SvtAnalysis() {
     <div className="max-w-4xl mx-auto p-6">
       <section className="mb-8">
         <h2 className="text-3xl font-bold text-teal-900 mb-2">Supraventricular Tachycardia (SVT Detection)</h2>
-        <p className="text-gray-600">Enter clinical input values for model prediction below.</p>
+        <p className="text-gray-600">Enter clinical values, upload an ECG CSV, or convert an ECG image before SVT prediction.</p>
       </section>
 
       <div className="bg-white shadow-md rounded-lg p-6 border border-cyan-100">
@@ -112,7 +198,11 @@ export default function SvtAnalysis() {
         
         <SVTForm 
           onSubmit={handlePredict} 
+          onCsvSubmit={handleCsvPredict}
+          onImageConvert={handleImageConvert}
+          onImageSubmit={handleImagePredict}
           loading={loading} 
+          loadingAction={loadingAction}
           onReset={handleReset} 
           hasResult={result !== null || error !== null} 
         />

@@ -18,6 +18,13 @@
   color: #1c3550;
 }
 
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
 .history-header input {
   width: 280px;
   max-width: 100%;
@@ -25,6 +32,26 @@
   border-radius: 8px;
   padding: 10px 12px;
   background: #f8fcfd;
+}
+
+.history-print-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.history-print-button:hover:not(:disabled) {
+  background: #115e59;
+}
+
+.history-print-button:disabled {
+  background: #a9c4c8;
+  cursor: not-allowed;
 }
 
 .history-note {
@@ -75,5 +102,15 @@
   .history-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .history-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-header input {
+    width: 100%;
   }
 }

@@ -122,6 +122,8 @@ const validatePayload = (payload) => {
     return null; 
 };
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // ==========================================
 // 5. ROUTES
 // ==========================================
@@ -212,10 +214,25 @@ app.post('/api/patients', async (req, res) => {
 
 app.get('/api/patients/history', async (req, res) => {
     try {
-        const { patientId, limit = '100' } = req.query;
-        const filter = patientId ? { 'patient.patient_id': String(patientId).trim() } : {};
+        const { patientId, search, limit = '100' } = req.query;
+        const trimmedPatientId = String(patientId || '').trim();
+        const trimmedSearch = String(search || '').trim();
+        let filter = {};
+
+        if (trimmedPatientId) {
+            filter = { 'patient.patient_id': trimmedPatientId };
+        } else if (trimmedSearch) {
+            const searchRegex = new RegExp(escapeRegex(trimmedSearch), 'i');
+            filter = {
+                $or: [
+                    { 'patient.patient_id': searchRegex },
+                    { 'patient.full_name': searchRegex },
+                ],
+            };
+        }
         
-        const rows = await PatientRecord.find(filter).sort({ created_at: -1 }).limit(Number(limit)).lean();
+        const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+        const rows = await PatientRecord.find(filter).sort({ created_at: -1 }).limit(safeLimit).lean();
         res.json({ status: 'success', total: rows.length, records: rows });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });

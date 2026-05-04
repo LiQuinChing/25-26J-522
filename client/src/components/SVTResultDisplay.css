@@ -1,7 +1,7 @@
 .result-display {
   margin: 0 28px 28px;
   padding: 22px;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 1px solid #d0e6ec;
   animation: slideIn 0.35s ease-out;
 }
@@ -35,7 +35,18 @@
 }
 
 .result-icon {
-  font-size: 40px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #d2e5eb;
+}
+
+.result-icon .material-symbols-outlined {
+  font-size: 30px;
 }
 
 .result-title h3 {
@@ -68,7 +79,7 @@
 .metric-card {
   background: white;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #d2e5eb;
 }
 
@@ -128,7 +139,7 @@
 .messages-section {
   background: white;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 18px;
   border: 1px solid #d2e5eb;
 }
@@ -179,7 +190,7 @@
 .result-interpretation {
   background: white;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 18px;
   border: 1px solid #d2e5eb;
 }
@@ -223,8 +234,48 @@
 .input-summary {
   background: white;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #d2e5eb;
+}
+
+.csv-analysis {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  border: 1px solid #d2e5eb;
+}
+
+.csv-analysis h4 {
+  margin: 0 0 15px 0;
+  color: #1f3b56;
+  font-size: 16px;
+}
+
+.row-preview {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.row-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.row-preview th,
+.row-preview td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid #e4f0f3;
+  color: #1f3b56;
+}
+
+.row-preview th {
+  color: #577287;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
 }
 
 .input-summary h4 {
